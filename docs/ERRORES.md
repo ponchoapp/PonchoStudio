@@ -66,3 +66,23 @@ color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminad
 ## 19 nov 2026 · Explorar armado contra un MCP imaginado
 **Qué pasó:** la galería y los presets se programaron con servidores falsos de forma inventada. Contra mcp.higgsfield.ai real: la galería salía vacía (la URL viene en `results.rawUrl`, no en `url`), `size` no se mandaba (viene como `anyOf`), el cursor decimal se perdía, y los presets daban 502 porque el cursor `"12"` en texto se toma como cursor de Katana.
 **Regla para no repetirlo:** antes de escribir el lector de una herramienta MCP, llamar la herramienta real una vez (solo lectura) y guardar la forma en una prueba (`test_forma_real_del_mcp_de_higgsfield`). Los cursores numéricos se mandan como número.
+
+## 19 nov 2026 · Precio de imagen cotizado como cuadrada
+**Qué pasó:** "Crear miniaturas" decía ~US$0,48 (44 × US$0,011), pero generaba en 1024x1536/1536x1024, que cuesta ~US$0,016 c/u (~US$0,70). Se iba a pasar de lo que Poncho autorizó.
+**Regla para no repetirlo:** el precio de imagen depende del tamaño. Antes de gastar, revisar que el tamaño que se manda coincida con la tarifa cotizada. Las miniaturas quedaron cuadradas (1024x1024).
+
+## 19 nov 2026 · Capturas con Chrome headless en blanco o colgadas
+**Qué pasó:** `--virtual-time-budget` se quedaba colgado con muchos videos en bucle, y `--timeout` sacaba la foto antes de que la vista cargara datos (Explorar salía en negro). Desde la extensión de Chrome, Bitwarden bloquea las capturas en páginas con formularios.
+**Regla para no repetirlo:** usar `node tools/captura.mjs` (Chrome headless por DevTools: espera a que `#contenido` tenga la vista y luego unos segundos). No sacar conclusiones de una captura en negro sin revisar en un navegador real.
+
+## 19 nov 2026 · Heredocs anidados en bash
+**Qué pasó:** un `python - <<EOF` grande dentro de un comando más largo falló con "unexpected EOF" por las comillas (lo vieron el coordinador y un agente).
+**Regla para no repetirlo:** para ediciones largas, escribir un archivo `.py` con Write (o en $TEMP) y correrlo; nada de heredocs anidados con comillas mezcladas.
+
+## 19 nov 2026 · git pull --autostash con agentes editando
+**Qué pasó:** se usó `git pull --rebase --autostash` mientras tres agentes tenían cambios sin commit. El autostash quita y devuelve sus archivos del disco; si un agente escribe en medio, hay conflicto o se pierde trabajo. Además un push grande dio 408.
+**Regla para no repetirlo:** con agentes trabajando, primero `git fetch` y `git rev-list --count HEAD..origin/main`; si es 0, solo `git push`. Commit solo de los archivos del agente que terminó. `http.postBuffer` subido a 500 MB para las capturas.
+
+## 19 nov 2026 · Dos sesiones de Claude subiendo a main a la vez
+**Qué pasó:** la sesión de la nube siguió subiendo commits (rediseño, referencias) mientras Claude Code trabajaba; dos pushes fueron rechazados y hubo conflictos en MEMORIA/ERRORES.
+**Regla para no repetirlo:** una sola sesión escribe código a la vez. La otra solo deja notas en MEMORIA. Antes de empezar, `git fetch` y leer lo nuevo.
