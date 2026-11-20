@@ -12,7 +12,9 @@ const CAMPOS = [
 
 function estadoGuardado(info) {
   if (info && info.guardada) {
-    return el("span", { class: "llave-estado llave-si" }, info.final ? `Guardada · termina en …${info.final}` : "Guardada");
+    // Llaves secretas traen "final"; Ollama (no secreto) trae "valor".
+    const txt = info.final ? `Guardada · termina en …${info.final}` : info.valor ? `Guardada · ${info.valor}` : "Guardada";
+    return el("span", { class: "llave-estado llave-si", title: txt }, txt);
   }
   return el("span", { class: "llave-estado" }, "Sin guardar");
 }
@@ -58,7 +60,7 @@ function campoModelo(c, info) {
   }).catch(() => { nota.textContent = "Ollama no respondió. Ábrelo y vuelve a abrir esta ventana."; });
   const nodo = el("div", { class: "campo" },
     el("label", { for: id }, el("span", {}, c.etiqueta, el("small", { class: "llave-ayuda" }, ` · ${c.ayuda}`)),
-      info && info.guardada ? el("span", { class: "llave-estado llave-si" }, info.final ? `Guardado · ${info.final}` : "Guardado") : estadoGuardado(info)),
+      estadoGuardado(info)),
     select, nota);
   return { nodo, leer: () => select.value };
 }

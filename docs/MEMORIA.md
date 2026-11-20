@@ -146,13 +146,11 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
 - [x] Catálogo real de Higgsfield (26 modelos) cargado desde `data/presets/higgsfield_catalogo.json`.
 - [x] Documentación: README, CHANGELOG, CLAUDE.md, ERRORES.md, CONTRATO_API.md, esta memoria.
 - [x] En GitHub y en `G:\DATOS\Documentos\PonchoStudio`.
-- [~] **Interfaz** (app/static): la estaba terminando un agente cuando se cerró la sesión. Tiene todas las vistas
-      (Explorar, Video, Imagen, Audio, Estudios, Biblioteca, Ajustes) y capturas en `docs/capturas/`. Faltaba:
-      el modal "Pegar mis llaves" en Ajustes (contrato en CONTRATO_API.md → Llaves) y su prueba final.
-      Si al abrir la sesión nueva el modal no existe en `app/static/js/vistas/ajustes.js`, hacerlo.
-- [ ] Verificación final: arrancar con ABRIR.bat en Windows, revisar consola, probar demo y una generación real
-      en 480p 4 s con Seedance 2.5 Flash cuando Poncho tenga la llave.
-- [ ] Cerrar versión: `VERSION = "0.1.0"`, CHANGELOG, `git tag v0.1.0`, push.
+- [x] **Interfaz** terminada (app/static): Explorar, Video, Imagen, Audio, Estudios, Biblioteca, Ajustes y la ventana
+      "Pegar mis llaves". Probada contra el backend real; capturas en `docs/capturas/`. Detalles en ERRORES.md.
+- [ ] Verificación en Windows: ABRIR.bat, revisar consola, demo, y generación real 480p 4 s con Seedance 2.5 Flash
+      cuando Poncho tenga la llave. (Audio aún es solo informativo: no hay ruta para generar audio.)
+- [x] Versión **v0.1.0** cerrada (tag en GitHub).
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).

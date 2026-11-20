@@ -368,7 +368,7 @@ select.entrada { appearance: none; padding-right: 36px;
 .llave-ojo { border: 1px solid var(--borde-2); background: var(--s1); flex-shrink: 0; }
 .llave-ojo[aria-pressed="true"] { color: var(--violeta); border-color: var(--violeta); }
 .llave-ayuda { color: var(--tenue); font-weight: 600; font-size: 12px; }
-.llave-estado { font-size: 12px; font-weight: 700; color: var(--tenue); white-space: nowrap; }
+.llave-estado { font-size: 12px; font-weight: 700; color: var(--tenue); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .llave-si { color: #7CF2C6; }
 .llaves-form .campo > label { flex-wrap: wrap; }
 .llaves-privacidad { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(177, 92, 255, .1); color: var(--lila); }

@@ -16,6 +16,9 @@ Primera versión.
 - Interfaz tipo Higgsfield en violeta (`#B15CFF`, sin lima): Explorar, Video, Imagen, Audio, Estudios, Biblioteca y Ajustes.
 - Video directo con **Seedance 2.5** por BytePlus ModelArk (también 2.0 y 2.0 Fast), sin intermediarios. Costo en vivo
   calculado por tokens y corregido con los tokens reales al terminar.
+- **Seedance 2.5 Flash** directo (`dreamina-seedance-2-5-flash-261115`, US$7/M tokens) para borradores baratos.
+- Ventana **"Pegar mis llaves"** en Ajustes: guarda en el `.env` del PC sin pasar por el chat.
+- Catálogo **real** de Higgsfield (26 modelos leídos de la cuenta, no inventados).
 - Imágenes con **OpenAI gpt-image-2** (generar y editar con referencias).
 - **Mejorar prompt** gratis con los modelos de **Ollama** del PC (detecta también los `:cloud`). Si no hay Ollama, usa
   OpenAI, y si tampoco hay OpenAI, usa reglas locales.
