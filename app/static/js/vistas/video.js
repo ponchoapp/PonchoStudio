@@ -1,7 +1,7 @@
 // Generador de video: Seedance 2.5 directo por defecto.
 import { api } from "../api.js";
 import { el, limpiar, toast, segmentado, sliderDuracion, interruptor, dropzone, formaIcono, insigniaCreditos } from "../ui.js";
-import { selectorModelo, crearPrompt, menuPresets, botonGenerar, enviarGeneracion, feedTrabajos, aplicarPrecarga, montarGenerador } from "../generador.js";
+import { selectorModelo, crearPrompt, menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, feedTrabajos, aplicarPrecarga, montarGenerador } from "../generador.js";
 
 const MODELO_DEFECTO = "seedance-2.5";
 
@@ -94,6 +94,10 @@ export async function montar(raiz, ctx) {
     menuPresets({ etiqueta: "Estilo", iconoNombre: "pincel", lista: presets.estilos || [], valor: st.estilo, onCambio: (p) => { st.estilo = p ? p.id : null; } }),
     menuPresets({ etiqueta: "Cámara", iconoNombre: "camara", lista: presets.camaras || [], valor: st.camara, onCambio: (p) => { st.camara = p ? p.id : null; } }),
   ];
+  menus.push(menuPlantillas({
+    lista: (presets.plantillas || []).filter((p) => (p.categoria === "imagen" ? "imagen" : "video") === "video"),
+    onElegir: (p) => { st.prompt = p.prompt; prompt.fijar(p.prompt); prompt.area.focus(); },
+  }));
   const feed = feedTrabajos({ tipo: "video", demo, irA: ctx.irA, vacio: { titulo: "Aún no hay videos", texto: "Escribe un prompt abajo y toca Generar. Aquí ves el progreso." } });
   const generar = botonGenerar({
     tipo: "video",

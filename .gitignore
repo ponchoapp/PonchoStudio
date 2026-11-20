@@ -1,6 +1,9 @@
 .env
 data/*
+# presets sí van a git, incluidas las miniaturas de plantillas
 !data/presets/
+!data/presets/miniaturas/
+data/presets/*.tmp
 __pycache__/
 *.pyc
 .venv/
@@ -8,3 +11,11 @@ __pycache__/
 *.db-wal
 *.db-shm
 .pytest_cache/
+
+# Skills de terceros instaladas con "npx skills add": viven solo en el PC
+.agents/
+.claude/skills/
+skills-lock.json
+
+# Copia local de los presets de Higgsfield (se refresca sola cada 24 h)
+data/presets/higgsfield_presets.json

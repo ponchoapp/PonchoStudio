@@ -27,7 +27,7 @@ TIEMPO = 60
 TIEMPO_CORTO = 15
 
 PALABRAS_LECTURA = ("list", "get", "history", "balance", "models", "search", "show")
-PALABRAS_ESCRITURA = ("generate", "create", "delete", "remove", "update", "upload", "edit",
+PALABRAS_ESCRITURA = ("execute", "apply", "generate", "create", "delete", "remove", "update", "upload", "edit",
                       "cancel", "submit", "run", "start", "buy", "purchase", "write", "set_", "post")
 EXTENSIONES_MEDIO = ("mp4", "mov", "webm", "png", "jpg", "jpeg", "webp", "gif", "mp3", "wav", "m4a", "ogg")
 
@@ -921,3 +921,393 @@ def consultar_via_mcp(id_remoto: str) -> dict | None:
         except ErrorProveedor:
             continue
     return None
+
+
+# ---------------------------------------------------------------- Explorar: galería, presets y recrear
+# Todo esto es SOLO lectura: no genera ni gasta créditos.
+
+NOMBRES_HISTORIAL = ("show_generations", "list_generations", "get_generations", "generations_list",
+                     "get_history", "list_history", "history")
+NOMBRES_PRESETS = ("get_presets", "presets_list", "list_presets", "presets_get", "search_presets", "presets")
+CAMPOS_CURSOR = ("cursor", "next_cursor", "page_token", "after", "offset", "page")
+CAMPOS_TIPO = ("type", "media_type", "kind", "job_type", "category_type", "output_type")
+CAMPOS_FUENTE = ("source", "fuente", "collection", "category", "tab", "group", "section")
+CLAVES_SIGUIENTE = ("next_cursor", "nextCursor", "next_page_token", "nextPageToken", "next", "cursor")
+EXT_VIDEO = ("mp4", "mov", "webm", "m4v")
+MAX_PRESETS = 200
+VIGENCIA_PRESETS = 24 * 3600
+VIGENCIA_GALERIA = 10 * 60
+_cache_galeria: dict = {}  # (tipo, cursor) → (hora, respuesta)
+
+
+def _elegir_herramienta(nombres: tuple[str, ...], palabras: tuple[str, ...]) -> dict | None:
+    """Primero por nombre exacto (en orden), luego por palabra en nombre o descripción. Solo lectura."""
+    lista = [h for h in herramientas() if es_lectura(h.get("name") or "") or
+             (h.get("name") or "").lower() in nombres]
+    lista = [h for h in lista if not any(w in (h.get("name") or "").lower() for w in PALABRAS_ESCRITURA)]
+    por_nombre = {(h.get("name") or "").lower(): h for h in lista}
+    for n in nombres:
+        if n in por_nombre:
+            return por_nombre[n]
+    for h in lista:
+        if any(w in (h.get("name") or "").lower() for w in palabras):
+            return h
+    for h in lista:
+        if any(w in (h.get("description") or "").lower() for w in palabras):
+            return h
+    return None
+
+
+def _props(herramienta: dict) -> tuple[dict, set]:
+    esquema = herramienta.get("inputSchema") or {}
+    return esquema.get("properties") or {}, set(esquema.get("required") or [])
+
+
+def _valor_enum(prop: dict, deseado: str):
+    """Para un campo con enum, el valor que contenga la palabra deseada (video/image)."""
+    enum = prop.get("enum")
+    if not enum:
+        return deseado
+    sinonimos = {"image": ("image", "imagen", "photo", "picture"), "video": ("video",)}[deseado]
+    return next((v for v in enum if any(x in str(v).lower() for x in sinonimos)), None)
+
+
+def _items_de(datos) -> list[dict]:
+    """La lista de objetos más larga dentro de la respuesta."""
+    mejor: list[dict] = []
+
+    def recorrer(obj):
+        nonlocal mejor
+        if isinstance(obj, list):
+            dicts = [x for x in obj if isinstance(x, dict)]
+            if len(dicts) > len(mejor):
+                mejor = dicts
+            for x in obj:
+                recorrer(x)
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                recorrer(v)
+
+    recorrer(datos)
+    return mejor
+
+
+def _siguiente_de(datos) -> str | None:
+    if not isinstance(datos, dict):
+        return None
+    for clave in CLAVES_SIGUIENTE:
+        v = datos.get(clave)
+        if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v):
+            return str(v)
+    for anidado in ("pagination", "meta", "page_info", "pageInfo"):
+        r = _siguiente_de(datos.get(anidado))
+        if r:
+            return r
+    return None
+
+
+def _primer_texto(obj: dict, claves: tuple[str, ...]) -> str | None:
+    for c in claves:
+        v = obj.get(c)
+        if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v).strip():
+            return str(v).strip()
+    return None
+
+
+def _url_medio(obj: dict, claves: tuple[str, ...]) -> str | None:
+    for c in claves:
+        v = obj.get(c)
+        if isinstance(v, str) and v.startswith(("http://", "https://")):
+            return v
+        if isinstance(v, dict):
+            r = _url_medio(v, ("url", "src", "video_url", "image_url"))
+            if r:
+                return r
+        if isinstance(v, list):
+            for x in v:
+                if isinstance(x, str) and x.startswith("http"):
+                    return x
+                if isinstance(x, dict):
+                    r = _url_medio(x, ("url", "src", "video_url", "image_url"))
+                    if r:
+                        return r
+    return None
+
+
+def _tipo_por_url(url: str | None) -> str | None:
+    if not url:
+        return None
+    ext = url.split("?")[0].rsplit(".", 1)[-1].lower()
+    if ext in EXT_VIDEO:
+        return "video"
+    if ext in ("png", "jpg", "jpeg", "webp", "gif", "avif"):
+        return "imagen"
+    return None
+
+
+def _tipo_de_item(obj: dict, url: str | None, modelo: str | None) -> str | None:
+    pistas = " ".join(str(obj.get(c, "")) for c in CAMPOS_TIPO + ("category", "media")).lower()
+    if "video" in pistas:
+        return "video"
+    if any(x in pistas for x in ("image", "imagen", "photo")):
+        return "imagen"
+    por_url = _tipo_por_url(url)
+    if por_url:
+        return por_url
+    if modelo:
+        info = catalogo.buscar(catalogo.PREFIJO_HF + modelo)
+        if info:
+            return catalogo.tipo_de(info["id"])
+        if any(p in modelo.lower() for p in PISTAS_VIDEO):
+            return "video"
+    return None
+
+
+def _item_galeria(obj: dict) -> dict | None:
+    url = _url_medio(obj, ("url", "video_url", "image_url", "result_url", "media_url", "output_url",
+                           "results", "result", "outputs", "output", "media", "images", "videos"))
+    if not url:
+        return None
+    modelo = _primer_texto(obj, ("job_set_type", "model", "model_id", "model_name"))
+    return {
+        "id": _primer_texto(obj, ("id", "job_id", "generation_id", "job_set_id")) or
+              hashlib.sha1(url.encode()).hexdigest()[:12],
+        "modelo": modelo,
+        "url": url,
+        "miniatura": _url_medio(obj, ("thumbnail_url", "thumbnail", "poster", "preview_image", "thumb",
+                                      "cover", "preview_url")),
+        "tipo": _tipo_de_item(obj, url, modelo) or "imagen",
+        "fecha": _primer_texto(obj, ("created_at", "createdAt", "created", "date", "timestamp", "updated_at")),
+    }
+
+
+def galeria(tipo: str | None = None, cursor: str | None = None) -> dict:
+    """Historial de la cuenta para Explorar. {"items", "siguiente"}. Cache de 10 min."""
+    tipo = {"image": "imagen", "imagen": "imagen", "video": "video"}.get((tipo or "").lower())
+    clave = (tipo, cursor or "")
+    guardado = _cache_galeria.get(clave)
+    if guardado and time.time() - guardado[0] < VIGENCIA_GALERIA:
+        return guardado[1]
+    herramienta = _elegir_herramienta(NOMBRES_HISTORIAL, ("generation", "history"))
+    if herramienta is None:
+        return {"items": [], "siguiente": None, "nota": "Higgsfield no ofrece el historial por MCP."}
+    props, requeridos = _props(herramienta)
+    args: dict = {}
+    campo_cursor = None
+    for nombre, prop in props.items():
+        n = nombre.lower()
+        prop = prop or {}
+        if n in ("limit", "page_size", "per_page", "count", "size") and prop.get("type") in ("integer", "number"):
+            args[nombre] = int(min(50, prop.get("maximum", 50)))
+        elif n in CAMPOS_CURSOR and campo_cursor is None:
+            campo_cursor = nombre
+            if cursor:
+                args[nombre] = int(cursor) if prop.get("type") in ("integer", "number") and cursor.isdigit() else cursor
+            elif n == "page":
+                args[nombre] = 1
+        elif n in CAMPOS_TIPO and tipo:
+            valor = _valor_enum(prop, "video" if tipo == "video" else "image")
+            if valor is not None:
+                args[nombre] = valor
+    faltan = [r for r in requeridos if r not in args and "default" not in (props.get(r) or {})]
+    if faltan:
+        raise ErrorProveedor(f"La herramienta {herramienta['name']} pide {', '.join(faltan)}.")
+    datos = datos_resultado(llamar(herramienta["name"], args))
+    crudos = _items_de(datos) if datos is not None else []
+    items = [i for i in (_item_galeria(o) for o in crudos) if i]
+    if tipo:
+        items = [i for i in items if i["tipo"] == tipo]
+    siguiente = _siguiente_de(datos)
+    if siguiente is None and campo_cursor and crudos:
+        n = campo_cursor.lower()
+        if n == "page":
+            siguiente = str(int(cursor or 1) + 1)
+        elif n == "offset":
+            siguiente = str(int(cursor or 0) + len(crudos))
+    respuesta = {"items": items, "siguiente": siguiente}
+    _cache_galeria[clave] = (time.time(), respuesta)
+    return respuesta
+
+
+# ---- presets
+
+def _ruta_presets_hf() -> Path:
+    return config.cfg.PRESETS / "higgsfield_presets.json"
+
+
+def leer_presets_guardados() -> dict | None:
+    ruta = _ruta_presets_hf()
+    if not ruta.is_file():
+        return None
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    if not isinstance(datos, dict) or not isinstance(datos.get("items"), list):
+        return None
+    return datos
+
+
+def _item_preset(obj: dict, fuente: str | None) -> dict | None:
+    pid = _primer_texto(obj, ("id", "preset_id", "slug", "uuid", "key"))
+    nombre = _primer_texto(obj, ("name", "title", "nombre", "label"))
+    if not pid and not nombre:
+        return None
+    preview = _url_medio(obj, ("preview_video_url", "video_url", "preview_url", "preview", "preview_video",
+                               "media_url", "thumbnail_url", "image_url", "cover", "thumbnail", "url",
+                               "examples", "media"))
+    modelo = _primer_texto(obj, ("model", "model_id", "job_set_type", "model_name"))
+    prompt = None
+    for c in ("prompt", "text_prompt", "positive_prompt", "default_prompt", "prompt_template"):
+        if isinstance(obj.get(c), str) and obj[c].strip():
+            prompt = obj[c].strip()
+            break
+    tipo = _tipo_de_item(obj, None, modelo) or _tipo_por_url(preview) or "video"
+    categoria = _primer_texto(obj, ("category", "categoria", "group", "collection", "section")) or fuente
+    return {
+        "id": pid or "hf-" + hashlib.sha1(nombre.encode()).hexdigest()[:10],
+        "nombre": nombre or pid,
+        "tipo": tipo,
+        "preview": preview,
+        "preview_tipo": _tipo_por_url(preview) or ("video" if preview and tipo == "video" else "imagen"),
+        "prompt": prompt,
+        "modelo": modelo,
+        "categoria": categoria,
+        # extras para recrear: formato y duración del preset si los trae
+        "formato": _primer_texto(obj, ("aspect_ratio", "ratio", "formato")),
+        "duracion": obj.get("duration") if isinstance(obj.get("duration"), (int, float))
+        and not isinstance(obj.get("duration"), bool) else None,
+    }
+
+
+def _bajar_presets(herramienta: dict) -> list[dict]:
+    """Recorre fuentes (si el esquema trae un enum) y páginas, hasta ~200 items."""
+    props, requeridos = _props(herramienta)
+    campo_fuente = next((n for n, p in props.items() if n.lower() in CAMPOS_FUENTE and (p or {}).get("enum")), None)
+    fuentes = list(props[campo_fuente]["enum"]) if campo_fuente else [None]
+    campo_cursor = next((n for n in props if n.lower() in CAMPOS_CURSOR), None)
+    campo_limite = next((n for n, p in props.items() if n.lower() in ("limit", "page_size", "per_page", "count")
+                         and (p or {}).get("type") in ("integer", "number")), None)
+    salida: dict[str, dict] = {}
+    for fuente in fuentes:
+        cursor = None
+        for _ in range(20):
+            args: dict = {}
+            if campo_fuente and fuente is not None:
+                args[campo_fuente] = fuente
+            if campo_limite:
+                args[campo_limite] = int(min(50, (props[campo_limite] or {}).get("maximum", 50)))
+            if campo_cursor and cursor is not None:
+                args[campo_cursor] = cursor
+            faltan = [r for r in requeridos if r not in args and "default" not in (props.get(r) or {})]
+            if faltan:
+                raise ErrorProveedor(f"La herramienta {herramienta['name']} pide {', '.join(faltan)}.")
+            datos = datos_resultado(llamar(herramienta["name"], args))
+            crudos = _items_de(datos) if datos is not None else []
+            for o in crudos:
+                item = _item_preset(o, str(fuente) if fuente is not None else None)
+                if item and item["id"] not in salida:
+                    salida[item["id"]] = item
+            if len(salida) >= MAX_PRESETS or not crudos or not campo_cursor:
+                break
+            siguiente = _siguiente_de(datos)
+            if siguiente is None and campo_cursor.lower() in ("page", "offset"):
+                base = int(cursor or (1 if campo_cursor.lower() == "page" else 0))
+                siguiente = base + (1 if campo_cursor.lower() == "page" else len(crudos))
+            if siguiente is None or siguiente == cursor:
+                break
+            cursor = siguiente
+        if len(salida) >= MAX_PRESETS:
+            break
+    return list(salida.values())[:MAX_PRESETS]
+
+
+def presets_higgsfield(fuente: str | None = None, forzar: bool = False) -> dict:
+    """Presets de Higgsfield normalizados. Sirve del archivo si tiene < 24 h o si el MCP falla."""
+    guardado = leer_presets_guardados()
+
+    def filtrar(datos: dict, nota: str | None = None) -> dict:
+        items = datos.get("items") or []
+        if fuente:
+            items = [i for i in items if (i.get("categoria") or "").lower() == fuente.lower()]
+        salida = {"items": items, "actualizado": datos.get("actualizado")}
+        if nota or datos.get("nota"):
+            salida["nota"] = nota or datos.get("nota")
+        return salida
+
+    if guardado and not forzar and time.time() - float(guardado.get("epoch") or 0) < VIGENCIA_PRESETS:
+        return filtrar(guardado)
+    if not conectado():
+        if guardado:
+            return filtrar(guardado, "Higgsfield no está conectado: es la copia guardada.")
+        raise ErrorProveedor("Higgsfield no está conectado. Conéctalo primero.", 409)
+    try:
+        herramienta = _elegir_herramienta(NOMBRES_PRESETS, ("preset",))
+        if herramienta is None:
+            nota = "Higgsfield no ofrece una herramienta de presets por MCP."
+            return filtrar(guardado, nota) if guardado else {"items": [], "nota": nota}
+        items = _bajar_presets(herramienta)
+    except ErrorProveedor as e:
+        if guardado:
+            return filtrar(guardado, f"Copia guardada ({e.mensaje})")
+        raise
+    datos = {"actualizado": time.strftime("%Y-%m-%dT%H:%M:%S"), "epoch": time.time(),
+             "herramienta": herramienta["name"], "items": items}
+    ruta = _ruta_presets_hf()
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    temporal = ruta.with_suffix(".tmp")
+    temporal.write_text(json.dumps(datos, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporal.replace(ruta)
+    return filtrar(datos)
+
+
+def _formato_de(obj_formato: str | None, opciones: list[str], defecto: str) -> str:
+    if obj_formato in opciones:
+        return obj_formato
+    try:
+        w, h = (float(x) for x in str(obj_formato).split(":"))
+    except (TypeError, ValueError):
+        return defecto
+    if w > h:
+        return next((o for o in ("16:9", "3:2") if o in opciones), defecto)
+    if h > w:
+        return next((o for o in ("9:16", "2:3") if o in opciones), defecto)
+    return "1:1" if "1:1" in opciones else defecto
+
+
+def recrear(preset_id: str) -> dict | None:
+    """Datos para precargar el generador con un preset. No genera nada. None si no existe."""
+    guardado = leer_presets_guardados()
+    if guardado is None and conectado():
+        presets_higgsfield()
+        guardado = leer_presets_guardados()
+    item = next((i for i in (guardado or {}).get("items") or [] if str(i.get("id")) == str(preset_id)), None)
+    if item is None:
+        return None
+    modelo_hf = item.get("modelo")
+    info_hf = catalogo.buscar(catalogo.PREFIJO_HF + modelo_hf) if modelo_hf else None
+    tipo = item.get("tipo") if item.get("tipo") in ("video", "imagen") else "video"
+    formato_original = item.get("formato") or item.get("aspect_ratio")
+    if tipo == "video":
+        # Exclusivo = el preset usa un modelo propio de Higgsfield que no es Seedance
+        exclusivo = bool(modelo_hf) and "seedance" not in modelo_hf.lower() and info_hf is not None
+        sugerido = "seedance-2.5"
+        ajustes = {"resolucion": "720p",
+                   "formato": _formato_de(formato_original, catalogo.FORMATOS_VIDEO, "16:9"),
+                   "duracion": int(min(30, max(4, item.get("duracion") or 5))),
+                   "audio": True, "semilla": None, "variantes": 1}
+    else:
+        exclusivo = bool(modelo_hf) and "gpt_image" not in modelo_hf.lower() and info_hf is not None
+        sugerido = "gpt-image-2"
+        ajustes = {"calidad": "medium", "formato": _formato_de(formato_original, ["1:1", "2:3", "3:2"], "1:1"),
+                   "semilla": None, "variantes": 1}
+    salida = {"prompt": item.get("prompt") or item.get("nombre") or "", "modelo_sugerido": sugerido,
+              "ajustes": ajustes, "tipo": tipo, "exclusivo": exclusivo,
+              "modelo_higgsfield": info_hf["id"] if info_hf else None}
+    if not item.get("prompt"):
+        salida["nota"] = "El preset no trae prompt: se usa su nombre como idea. Mejóralo antes de generar."
+    elif exclusivo:
+        salida["nota"] = (f"Este preset es de {info_hf['nombre']} (exclusivo de Higgsfield). "
+                          "Se sugiere Seedance 2.5 directo para no gastar créditos." if tipo == "video" else
+                          f"Este preset es de {info_hf['nombre']} (Higgsfield). Se sugiere GPT Image 2 directo.")
+    return salida

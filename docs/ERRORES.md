@@ -35,3 +35,14 @@
 ## 19 nov 2026 · Mandar "adaptive" como formato desde el frontend
 **Qué pasó:** con foto de entrada, el frontend mandaba `ajustes.formato: "adaptive"` para Seedance. El backend valida contra `formatos` del catálogo y respondía 400; la conversión a `adaptive` ya la hace `proveedores/seedance.py`.
 **Regla para no repetirlo:** el frontend manda siempre un formato del catálogo. Las reglas propias de un proveedor viven en su archivo del backend, no en la interfaz.
+
+## 2026-11-19 · La barra de prompt se salía de la pantalla en celular
+**Qué pasó:** en 390 px la barra flotante era más ancha que la pantalla y el botón Generar quedaba fuera. Un hijo de
+grid toma como mínimo el ancho de su fila de chips.
+**Regla:** en contenedores grid con filas de chips usar `grid-template-columns: minmax(0,1fr)` y chips con
+`flex-shrink: 0` dentro de una fila con scroll.
+
+## 2026-11-19 · La primera interfaz no gustó
+**Qué pasó:** hero gigante, tarjetas moradas planas y plantillas sin imagen. Poncho pidió "igual a Higgsfield".
+**Regla:** la home arranca en la grilla de ejemplos con imagen o video real; nada de tarjetas vacías ni bloques de
+color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminada.

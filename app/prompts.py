@@ -48,10 +48,16 @@ def _preset(d: dict, tipo: str) -> dict:
             "origen": d.get("origen") or "poncho"}
 
 
+def _miniatura_plantilla(plantilla_id: str) -> str | None:
+    from app import miniaturas  # aquí adentro para no crear un import circular
+    return miniaturas.url_miniatura(plantilla_id)
+
+
 def _plantilla(d: dict) -> dict:
     return {"id": str(d["id"]), "nombre": d.get("nombre") or str(d["id"]),
             "categoria": d.get("categoria") or "video", "prompt": d.get("prompt") or "",
-            "modelo_sugerido": d.get("modelo_sugerido"), "origen": d.get("origen") or "poncho"}
+            "modelo_sugerido": d.get("modelo_sugerido"), "origen": d.get("origen") or "poncho",
+            "miniatura": _miniatura_plantilla(str(d["id"])) or d.get("miniatura")}
 
 
 def presets() -> dict:
