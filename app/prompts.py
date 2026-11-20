@@ -12,14 +12,15 @@ SISTEMA_VIDEO = (
     "You rewrite video prompts for {modelo}. Write ONE cinematic prompt in English, "
     "in the style of Higgsfield and Seedance prompts. Cover, in this order: subject, action, "
     "camera movement and framing, lighting, lens, environment and mood, and sound/audio cues. "
-    "Keep the user's idea and any names or text exactly. Concrete visual words, no lists, "
+    "Keep the user's idea and any names or text exactly. Natural skin tones (never yellowish), "
+    "no oversaturated colors, smooth camera moves without strong shakes. Concrete visual words, no lists, "
     "no headings. Maximum 120 words. Return only the prompt, nothing else."
 )
 SISTEMA_IMAGEN = (
     "You rewrite image prompts for {modelo}. Write ONE cinematic photographic prompt in English, "
     "in the style of Higgsfield prompts. Cover: subject, pose or action, framing and composition, "
     "lighting, lens and camera, environment, color palette and mood. Keep the user's idea and any "
-    "names or text exactly. Natural skin tones, no oversaturated colors. Maximum 120 words. "
+    "names or text exactly. Natural skin tones (never yellowish), no oversaturated colors. Maximum 120 words. "
     "Return only the prompt, nothing else."
 )
 

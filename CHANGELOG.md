@@ -9,6 +9,15 @@ Cada versión lleva su etiqueta de git (`v0.1.0`). Sube `VERSION` en `app/__init
 
 ## [Sin publicar]
 
+### Arreglado
+- **Mejorar prompt con Qwen 3.5** tardaba 85 s y volvía vacío: ahora se manda `think: false` a Ollama (~4 s).
+- `INSTALAR.bat` funciona con Python 3.13/3.14 si no hay 3.12, e instala pytest.
+- Pruebas en Windows: 12 fallaban por la espera de 2 s de un puerto cerrado; ahora usan un servicio falso "apagado".
+
+### Cambiado
+- Si `OLLAMA_MODELO` está vacío se prefiere Gemma 4, luego Qwen 3.5. El mejorador pide piel natural (sin tono
+  amarillo), colores sin saturar y cámara suave.
+
 ## [0.1.0] · 2026-11-19
 Primera versión.
 

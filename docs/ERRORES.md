@@ -46,3 +46,19 @@ grid toma como mínimo el ancho de su fila de chips.
 **Qué pasó:** hero gigante, tarjetas moradas planas y plantillas sin imagen. Poncho pidió "igual a Higgsfield".
 **Regla:** la home arranca en la grilla de ejemplos con imagen o video real; nada de tarjetas vacías ni bloques de
 color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminada.
+
+## 19 nov 2026 · Puerto cerrado como "servicio apagado" en Windows (pruebas)
+**Qué pasó:** las pruebas simulaban Ollama/Higgsfield apagados con `http://127.0.0.1:9`. En Linux la conexión se rechaza al instante; en Windows tarda ~2 s (reintentos de SYN). `/api/salud` tardaba 1.5 s, más que el timeout de 1 s del fixture, y 12 pruebas fallaban con "El servidor no arrancó".
+**Regla para no repetirlo:** para "apagado" usar `ManejadorApagado` (`tests/falsos.py`), que responde 503 al instante. Nunca depender de cuánto tarda un puerto cerrado.
+
+## 19 nov 2026 · Modelos de Ollama que "piensan" (Qwen 3.5)
+**Qué pasó:** con `OLLAMA_MODELO=hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M`, "Mejorar prompt" tardaba 85 s y Ollama devolvía `content` vacío (todo iba a `thinking`). La app caía a OpenAI (gasta plata) o a reglas.
+**Regla para no repetirlo:** mandar siempre `"think": false` a `/api/chat` (si Ollama responde 400 por "think", reintentar sin el campo). Al probar un modelo nuevo, medir tiempo y revisar que `content` no venga vacío.
+
+## 19 nov 2026 · INSTALAR.bat exigía Python 3.12
+**Qué pasó:** el PC solo tiene Python 3.14 (lanzador `py`); `py -3.12` falló y `python` es el alias de Microsoft Store. La instalación no arrancaba.
+**Regla para no repetirlo:** INSTALAR.bat prueba `py -3.12`, luego `py -3`, luego `python`. Las dependencias son Python puro y corren en 3.14 (52 pruebas pasan).
+
+## 19 nov 2026 · Probar "modo demo" con llaves reales en el .env
+**Qué pasó:** al abrir la app para probar el demo, Poncho ya había pegado sus llaves: la app en 8010 NO estaba en demo y un clic en Generar gastaba plata.
+**Regla para no repetirlo:** el demo se prueba en otra copia: `ARK_API_KEY= OPENAI_API_KEY= DATA_DIR=<temporal> HIGGSFIELD_MCP_URL=http://127.0.0.1:9/mcp python -m app --sin-navegador --puerto 8011`. Las variables de entorno ganan sobre el .env.

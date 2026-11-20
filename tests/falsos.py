@@ -378,12 +378,19 @@ class ManejadorOllama(Base):
         if self.path == "/api/tags":
             return self._json(200, {"models": [{"name": "nomic-embed-text:latest", "size": 1},
                                                {"name": "poncho-prompts:latest", "size": 2000},
-                                               {"name": "gpt-oss:120b-cloud", "size": None}]})
+                                               {"name": "gpt-oss:120b-cloud", "size": None},
+                                               {"name": "viejo:latest", "size": 3}]})
         self._json(404, {})
 
     def do_POST(self):
         datos = json.loads(self._cuerpo())
         assert datos["stream"] is False
+        if datos["model"] == "viejo:latest" and "think" in datos:
+            return self._json(400, {"error": "\"viejo\" does not support thinking"})
+        if datos["model"] != "viejo:latest" and datos.get("think") is not False:
+            # Como Qwen 3.5: sin think=false todo se va a "thinking" y el contenido queda vacío.
+            return self._json(200, {"model": datos["model"], "message": {
+                "role": "assistant", "content": "", "thinking": "mucho pensar..."}})
         self._json(200, {"model": datos["model"], "message": {"role": "assistant", "content":
                          "<think>pensando...</think>\nPrompt: \"A golden retriever runs on a beach, "
                          "tracking shot, golden hour light, 50mm lens, waves crashing.\""}})

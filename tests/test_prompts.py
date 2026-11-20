@@ -34,8 +34,22 @@ def test_mejorar_con_ollama_falso(entorno):
         assert "<think>" not in r["prompt"] and not r["prompt"].startswith("Prompt")
         r = prompts.mejorar("perro", "video", None, "ollama", "gpt-oss:120b-cloud")
         assert r["motor"] == "ollama:gpt-oss:120b-cloud"
+        # Ollama viejo o modelo sin "think": reintenta sin el campo y funciona igual
+        r = prompts.mejorar("perro", "video", None, "ollama", "viejo")
+        assert r["motor"] == "ollama:viejo:latest" and r["prompt"].startswith("A golden retriever")
     finally:
         servidor.shutdown()
+
+
+def test_elegir_prefiere_gemma4_y_qwen35(entorno, monkeypatch):
+    from app.proveedores import ollama
+    lista = ["nomic-embed-text:latest", "llama3.2:3b", "hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M",
+             "hf.co/google/gemma-4-E4B-it-qat-q4_0-gguf:latest"]
+    monkeypatch.setattr(ollama, "modelos", lambda: [{"nombre": n} for n in lista])
+    assert ollama.elegir_modelo() == "hf.co/google/gemma-4-E4B-it-qat-q4_0-gguf:latest"
+    lista.pop()
+    assert ollama.elegir_modelo() == "hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M"
+    assert ollama.elegir_modelo("llama3.2:3b") == "llama3.2:3b"  # lo que pida Poncho gana
 
 
 def test_presets_lee_archivos_y_aplica(entorno):

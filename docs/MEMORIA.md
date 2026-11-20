@@ -2,7 +2,7 @@
 
 Archivo que resume TODA la conversación y las decisiones. Se actualiza en cada avance.
 Si la conversación se compacta o se empieza una nueva sesión, leer esto primero.
-Última actualización: 19 nov 2026, 19:25 (hora Colombia).
+Última actualización: 19 nov 2026, 20:45 (hora Colombia).
 
 ## 1. Qué pidió Poncho (sus palabras, resumidas)
 - Una app nueva para crear videos e imágenes **con interfaz como Higgsfield** (inicio/explorar, imagen, video,
@@ -134,7 +134,7 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
 - `C:\Users\andre\.ollama\config.json` → integración con Claude usando `glm-5.3-flash:cloud` (Ollama Pro, nube).
 - Los modelos locales NO están en `~/.ollama/models` (OLLAMA_MODELS apunta a otra carpeta, sin ubicar).
   La app los lista en vivo con `/api/tags`; Poncho elige el suyo en Ajustes (OLLAMA_MODELO).
-- Pendiente: que Poncho diga qué modelos creó (o correr `ollama list` en Windows) para ponerlos por defecto.
+- Hecho (19 nov): `ollama list` revisado; por defecto Gemma 4 E4B (ver 5b).
 
 ## 4h. Higgsfield completo
 - El conector personalizado (mcp.higgsfield.ai, puede generar) está conectado en claude.ai pero NO cargó en la sesión
@@ -179,8 +179,21 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
   **Ojo:** `design-taste-frontend` salió con "Critical Risk" (Gen) en el instalador: leer su SKILL.md y scripts antes
   de usarla; no es necesaria.
 - La sesión en la nube (esta) deja de tocar el código para no pisarse. Rama `rediseno-higgsfield` ya está unida a main.
-- Ollama: el modelo del .env (Qwen 3.5 4B) "piensa" ~85 s y devuelve vacío; Claude Code lo estaba arreglando
-  (`think: false` y elegir el mejor modelo).
+- Ollama: arreglado en 5d (`think: false`, Gemma 4 E4B por defecto).
+
+## 5d. Sesión Claude Code en Windows (19 nov, 20:00–20:50)
+- Higgsfield **completo** (mcp.higgsfield.ai, puede generar) SÍ cargó en Claude Code: 6000 créditos, plan creator.
+  Regla: antes de generar con él, decir el costo (estimate_*_cost) y esperar el sí de Poncho.
+- El PC ya hace `git push` directo a GitHub (el proxy 403 era solo de la sesión en la nube). Tag v0.1.0 ya está arriba.
+- Python del PC: solo 3.14 (`py`). INSTALAR.bat ahora usa `py -3` si no hay 3.12 e instala también pytest.
+- Poncho pegó sus llaves (ARK, OpenAI) y conectó Higgsfield en la app el 19 nov 20:25: **la app en 8010 ya NO es demo**.
+  El demo se prueba en una copia en 8011 sin llaves (ver ERRORES.md). Probado: 7 vistas cargan, sin errores de consola
+  (solo los de la extensión Bitwarden, que también bloquea las capturas de Claude in Chrome), video e imagen demo OK.
+- Chrome: "Browser 1" es el de este PC; "Browser 2" no llega a localhost.
+- Ollama (`ollama list`): qwen3.5:4b, hf.co/google/gemma-4-E4B-it-qat-q4_0-gguf:latest, hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M.
+  GPU RTX 4050 6 GB. Por defecto ahora **Gemma 4 E4B** (~4 s, el texto más rico). Qwen 3.5 solo sirve con `think:false`
+  (sin eso, 85 s y respuesta vacía): arreglado en `proveedores/ollama.py`.
+- En curso: **v0.2.0** = Seedream 5.5 (imagen, misma ARK_API_KEY), botón "Comparar" y OpenRouter como plan B de Seedance.
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
