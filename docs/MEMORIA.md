@@ -102,13 +102,65 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
 - Dato útil: Seedance 2.5 en Higgsfield sí da 4K y tiene modo `draft` 480p que se finaliza después (7 días).
 
 ## 4d. GitHub
-- Cuenta: **ponchoapp**. Repo creado por Poncho: `ponchoapp/PonchoStudio` (vacío, privado).
-- La sesión puede leerlo, pero el push se rechaza: falta instalar la app de Claude en GitHub con acceso al repo
-  (github.com/apps/claude/installations/select_target).
+- Cuenta: **ponchoapp**. Repo: **github.com/ponchoapp/PonchoStudio** (privado), rama `main`.
+- App de Claude instalada en GitHub con "All repositories": las sesiones de Claude ya pueden hacer push.
+- Cada avance va con commit + push. Al cerrar versión: subir `VERSION`, entrada en `CHANGELOG.md` y `git tag vX.Y.Z`.
+- La copia del PC (`G:\DATOS\Documentos\PonchoStudio`) tiene su `.git`. El PC (shell de Claude) NO llega a GitHub
+  (proxy 403): para sincronizar se manda un `git bundle` y se hace `git pull` del bundle, o Poncho hace `git pull` en Windows.
+- `G:\DATOS\Documentos\_to_delete\PonchoStudio.tar.gz`: copia vieja, se puede borrar.
 
-## 5. Progreso
-- [x] Revisión de apps existentes y del código de Higgsfield.
-- [ ] App construida.
-- [ ] Documentación (README, CHANGELOG, ERRORES).
-- [ ] Guardada en G:\DATOS\Documentos\PonchoStudio y en git.
-- [ ] Verificada.
+## 4e. BytePlus (Seedance) — lo que hizo Poncho el 19 nov
+- Cuenta creada en console.byteplus.com, región **Asia Pacific (Johor)** = `ap-southeast-1` (coincide con la URL de la app).
+- NO comprar el "Coding Plan" (US$10/50 mes): es para modelos de texto, no incluye Seedance. Seedance es pago por uso.
+- Va a activar en **Console → Model activation**: Dreamina-Seedance-2.5, Dreamina-Seedance-2.5-flash y Dola-Seedream-5.5.
+- Model ID de Flash (verificado en consola): `dreamina-seedance-2-5-flash-261115`, US$7/M tokens sin video (4.3 con video).
+  Ya está en `app/catalogo.py` como `seedance-2.5-flash` (480p/720p).
+- **Falta**: Model ID de **Dola-Seedream-5.5** (imagen, US$0.02–0.035 por imagen, fondo transparente) para agregarlo
+  como motor de imagen con la misma ARK_API_KEY (endpoint de imágenes de ModelArk).
+- Opción "Free Credits Only Mode": si la prende, solo gasta crédito gratis y se pausa. Recomendado para la primera prueba.
+- Modelos de texto baratos en la misma cuenta (GLM-5.3-Flash, DeepSeek-V4.1-Flash): idea para respaldo de "Mejorar prompt".
+- Poncho TIENE API de OpenAI (ChatGPT API): imágenes con gpt-image-2 listas en cuanto pegue la llave.
+
+## 4f. Llaves
+- NUNCA pedir ni recibir llaves por el chat. La app tiene ventana "Pegar mis llaves" en Ajustes → `POST /api/llaves`
+  escribe el `.env` del PC (conserva lo demás), recarga sin reiniciar y solo muestra los 4 últimos caracteres.
+  Bloquea peticiones de otras páginas (origen ≠ localhost). Servidor solo en 127.0.0.1:8010.
+
+## 4g. Ollama
+- `C:\Users\andre\.ollama\config.json` → integración con Claude usando `glm-5.3-flash:cloud` (Ollama Pro, nube).
+- Los modelos locales NO están en `~/.ollama/models` (OLLAMA_MODELS apunta a otra carpeta, sin ubicar).
+  La app los lista en vivo con `/api/tags`; Poncho elige el suyo en Ajustes (OLLAMA_MODELO).
+- Pendiente: que Poncho diga qué modelos creó (o correr `ollama list` en Windows) para ponerlos por defecto.
+
+## 4h. Higgsfield completo
+- El conector personalizado (mcp.higgsfield.ai, puede generar) está conectado en claude.ai pero NO cargó en la sesión
+  del 19 nov (solo cargó el de solo lectura). En una sesión NUEVA debería aparecer. Antes de generar con él:
+  decir el costo en créditos y esperar confirmación de Poncho.
+
+## 5. Progreso (19 nov, 19:56)
+- [x] Revisión de apps existentes y del código de Higgsfield (PDFs → /home/claude/hf/*.txt en la sesión vieja).
+- [x] Backend completo (Starlette): Seedance 2.5/2.5 Flash/2.0/2.0 Fast directo, OpenAI imágenes, Ollama,
+      cliente MCP Higgsfield con OAuth+PKCE, cola de trabajos (máx 3 Seedance), modo demo, llaves desde la app.
+      **51 pruebas pasan** (`python -m pytest`).
+- [x] Biblioteca de prompts: 40 cámaras, 35 estilos, 44 plantillas (`data/presets/`), `docs/GUIA_PROMPTS.md`.
+- [x] Catálogo real de Higgsfield (26 modelos) cargado desde `data/presets/higgsfield_catalogo.json`.
+- [x] Documentación: README, CHANGELOG, CLAUDE.md, ERRORES.md, CONTRATO_API.md, esta memoria.
+- [x] En GitHub y en `G:\DATOS\Documentos\PonchoStudio`.
+- [~] **Interfaz** (app/static): la estaba terminando un agente cuando se cerró la sesión. Tiene todas las vistas
+      (Explorar, Video, Imagen, Audio, Estudios, Biblioteca, Ajustes) y capturas en `docs/capturas/`. Faltaba:
+      el modal "Pegar mis llaves" en Ajustes (contrato en CONTRATO_API.md → Llaves) y su prueba final.
+      Si al abrir la sesión nueva el modal no existe en `app/static/js/vistas/ajustes.js`, hacerlo.
+- [ ] Verificación final: arrancar con ABRIR.bat en Windows, revisar consola, probar demo y una generación real
+      en 480p 4 s con Seedance 2.5 Flash cuando Poncho tenga la llave.
+- [ ] Cerrar versión: `VERSION = "0.1.0"`, CHANGELOG, `git tag v0.1.0`, push.
+
+## 6. Ideas pedidas o propuestas (siguientes versiones)
+- Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
+- Seedream 5.5 como motor de imagen (más barato que OpenAI, fondo transparente).
+- Plantillas del estilo de Poncho sacadas de sus videos de Seedance en Higgsfield (`show_generations` da los enlaces).
+- Respaldo de "Mejorar prompt" con GLM/DeepSeek de BytePlus.
+
+## 7. Cómo seguir en una ventana nueva
+1. Abrir sesión nueva en Claude (desktop, con el PC seleccionado) y conectar la carpeta `G:\DATOS\Documentos`.
+2. Decir: *"Lee G:\DATOS\Documentos\PonchoStudio\docs\MEMORIA.md y docs\ERRORES.md y sigue con PonchoStudio."*
+3. O en Claude Code: `cd G:\DATOS\Documentos\PonchoStudio` → `git pull` → `claude` (lee CLAUDE.md solo).
