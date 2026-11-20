@@ -9,6 +9,7 @@ from pathlib import Path
 import requests
 
 from app import catalogo, config
+from app import referencias
 from app.proveedores import ErrorProveedor
 
 TIEMPO = 30  # segundos por llamada
@@ -94,9 +95,22 @@ def armar_cuerpo(modelo_id: str, prompt: str, ajustes: dict, entradas: dict) -> 
             contenido.append({"type": "image_url", "image_url": {"url": a_url(entradas[clave])}, "role": rol})
             hay_imagen = True
     for ref in entradas.get("referencias") or []:
-        if ref:
+        if not ref:
+            continue
+        tipo = referencias.tipo_de(ref) or "imagen"
+        if tipo == "imagen":
             contenido.append({"type": "image_url", "image_url": {"url": a_url(ref)}, "role": "reference_image"})
             hay_imagen = True
+            continue
+        # Video y audio de referencia van por enlace público (no caben en base64). El enlace es el de origen
+        # que guardó /api/referencias/importar. Nombres de rol según el modo omni-reference de Seedance 2.x:
+        # falta confirmarlos con una generación real (ver docs/MEMORIA.md).
+        enlace = ref if ref.startswith(("http://", "https://")) else referencias.origen_de(ref)
+        if not enlace:
+            raise ErrorProveedor("Un video o audio de referencia debe venir de un enlace público. "
+                                 "Elígelo desde Explorar o usa una imagen.")
+        campo = "video_url" if tipo == "video" else "audio_url"
+        contenido.append({"type": campo, campo: {"url": enlace}, "role": f"reference_{'video' if tipo == 'video' else 'audio'}"})
     ratio = ajustes.get("formato") or "16:9"
     if hay_imagen and modelo.get("_ratio_adaptativo"):
         ratio = "adaptive"  # Seedance 2.5 con foto de entrada solo acepta adaptive

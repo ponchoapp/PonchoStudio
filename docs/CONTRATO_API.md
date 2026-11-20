@@ -122,3 +122,13 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 - `POST /api/llaves` body `{ARK_API_KEY?, OPENAI_API_KEY?, OLLAMA_URL?, OLLAMA_MODELO?}` (vacío = no cambiar)
   → `{"ok":true,"guardadas":[...],"salud":{...}}` · 400 si algo no sirve · 403 si la petición viene de otra página.
   Escribe el `.env` conservando las demás líneas y recarga la configuración sin reiniciar.
+
+### Referencias desde un enlace (para que un ejemplo elegido no se pierda)
+- `POST /api/referencias/importar` body `{"url":"https://…"}` → `{"url":"/medios/ref_….mp4","tipo":"imagen"|"video"|"audio","origen":"https://…","cuadro":"/medios/ref_….jpg"|null}`
+  Descarga el medio a `data/medios` (máx 50 MB) y guarda su enlace de origen. `cuadro` es el primer cuadro de un
+  video (solo si hay ffmpeg). El `url` devuelto se usa en `entradas.referencias` de `/api/generar` igual que uno subido.
+  Solo acepta enlaces públicos http(s): rechaza localhost y redes privadas. 415 si no es imagen/video/audio,
+  413 si pesa más de 50 MB, 502 si el enlace falla.
+- Cómo llega a Seedance: imágenes en base64 (`reference_image`); video y audio por su enlace público de origen
+  (`video_url`/`audio_url` con rol `reference_video`/`reference_audio`). Un video subido a mano (sin enlace público)
+  da un error claro. **Los nombres de rol de video/audio no están confirmados con una generación real.**

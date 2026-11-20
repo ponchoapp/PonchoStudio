@@ -20,6 +20,7 @@ from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, R
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
+from app import referencias
 from app import VERSION, catalogo, config, db, miniaturas, prompts, trabajos
 from app.proveedores import ErrorProveedor, higgsfield, ollama, openai_img, seedance
 from app.trabajos import ErrorValidacion, ahora_iso
@@ -188,6 +189,16 @@ async def subir(request: Request):
         return JSONResponse({"url": f"/medios/{nombre}", "tipo": tipo})
     finally:
         await formulario.close()
+
+
+@manejar_errores
+async def importar_referencia(request: Request):
+    """Trae un medio de un enlace público (p. ej. un ejemplo de Explorar) para usarlo como referencia."""
+    d = await leer_json(request)
+    try:
+        return JSONResponse(await run_in_threadpool(referencias.importar, str(d.get("url") or "")))
+    except referencias.ErrorReferencia as e:
+        return error(str(e), e.codigo)
 
 
 # ---------------------------------------------------------------- trabajos
@@ -480,6 +491,7 @@ rutas = [
     Route("/api/costo", ver_costo, methods=["POST"]),
     Route("/api/generar", generar, methods=["POST"]),
     Route("/api/subir", subir, methods=["POST"]),
+    Route("/api/referencias/importar", importar_referencia, methods=["POST"]),
     Route("/api/trabajos", listar_trabajos, methods=["GET"]),
     Route("/api/trabajos/{id}", ver_trabajo, methods=["GET"]),
     Route("/api/trabajos/{id}", borrar_trabajo, methods=["DELETE"]),

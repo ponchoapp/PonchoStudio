@@ -212,6 +212,15 @@ Usar las skills de diseño que instaló (frontend-design, impeccable, ui-ux-pro-
    capturas de Claude in Chrome: probar con la extensión en pausa o capturar con otra herramienta).
 4. [ ] v0.2.0: Seedream 5.5, OpenRouter (plan B de Seedance) y "Comparar".
 
+## 5f. Referencias que no se pierden (nube, 19 nov 21:10)
+- Backend listo: `POST /api/referencias/importar {url}` (app/referencias.py) baja el medio de un ejemplo a `data/medios`
+  y recuerda su enlace. `seedance.armar_cuerpo` manda imágenes en base64 y video/audio por enlace público.
+- **Falta en la interfaz** (Claude Code): al dar "Recrear" o elegir un ejemplo, llamar a importar con la URL de la vista
+  previa y dejar el resultado adjunto en Referencias (tarjeta con miniatura, "Cambiar" y X; persistir al cambiar de vista).
+- **Falta probar de verdad**: una generación 480p 4 s con Seedance 2.5 Flash (~US$0,10) con un video de referencia para
+  confirmar los roles `reference_video`/`reference_audio` y que ModelArk acepte el enlace de CloudFront de Higgsfield.
+  Si lo rechaza: usar `cuadro` (primer cuadro) como `reference_image`. Pedir permiso a Poncho antes de gastar.
+
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
 - Seedream 5.5 como motor de imagen (más barato que OpenAI, fondo transparente).
