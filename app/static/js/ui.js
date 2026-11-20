@@ -49,6 +49,11 @@ const RUTAS_ICONOS = {
   ojo: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   ojoNo: '<path d="M9.9 4.2A10 10 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-3 4M6.6 6.6C3.6 8.5 2 12 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6"/><path d="M14.1 14.1a3 3 0 0 1-4.2-4.2M2 2l20 20"/>',
   llave: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
+  abajo: '<path d="m6 9 6 6 6-6"/>',
+  ajustes: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  camara: '<path d="M23 7 16 12l7 5z"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
+  pincel: '<path d="M9.06 11.9 17.5 3.5a2.12 2.12 0 0 1 3 3l-8.4 8.44"/><path d="M7 14c-1.7 0-3 1.3-3 3 0 1.3-1 2-2 2 1 1.5 2.7 2 4 2 2.2 0 4-1.8 4-4 0-1.7-1.3-3-3-3z"/>',
   guardar: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
 };
 export function icono(nombre, clase = "icono") {
@@ -82,17 +87,85 @@ export function proporcion(formato, ancho, alto) {
   return m ? `${m[1]} / ${m[2]}` : "16 / 9";
 }
 
-// Arte de respaldo determinista: degradados fríos según el texto.
-const PALETA = ["#B15CFF", "#FF4FD8", "#00E0FF", "#E0AAFF", "#8B3DFF", "#7E2FD6"];
+// Arte de respaldo determinista: degradado oscuro con un tinte frío muy suave.
+// Va con la clase "ruido" para que no se vea como un bloque plano.
+const TINTES = ["177, 92, 255", "0, 224, 255", "224, 170, 255", "255, 79, 216", "139, 61, 255"];
 export function arte(semilla = "") {
   let h = 0;
   for (const c of String(semilla)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const a = PALETA[h % PALETA.length];
-  const b = PALETA[(h >> 3) % PALETA.length];
-  const ang = h % 360;
-  const x = 20 + (h % 60), y = 20 + ((h >> 5) % 60);
-  return `radial-gradient(70% 60% at ${x}% ${y}%, ${a}cc, transparent 70%), ` +
-         `linear-gradient(${ang}deg, ${b}66, #121216 70%)`;
+  const t1 = TINTES[h % TINTES.length];
+  const t2 = TINTES[(h >> 4) % TINTES.length];
+  const x = 15 + (h % 70), y = 10 + ((h >> 6) % 60);
+  return `radial-gradient(80% 70% at ${x}% ${y}%, rgba(${t1}, .16), transparent 70%), ` +
+         `radial-gradient(60% 60% at ${100 - x}% ${100 - y / 2}%, rgba(${t2}, .08), transparent 70%), ` +
+         `linear-gradient(${h % 360}deg, #0d0d11, #16161c)`;
+}
+
+/* ---------- Masonry ---------- */
+// Reparte cada elemento en la columna más baja (orden por filas, como un feed).
+// columnas(ancho) decide cuántas columnas según el ancho del contenedor.
+export function masonry(columnas) {
+  const raiz = el("div", { class: "mas" });
+  let items = [], n = 0;
+  const distribuir = () => {
+    const cols = Array.from({ length: n }, () => el("div", { class: "mas-col" }));
+    const alturas = new Array(n).fill(0);
+    for (const it of items) {
+      let i = 0;
+      for (let k = 1; k < n; k++) if (alturas[k] < alturas[i] - 0.01) i = k;
+      cols[i].append(it);
+      alturas[i] += (it.altoRel || 1) + 0.06;
+    }
+    raiz.replaceChildren(...cols);
+  };
+  const medir = () => {
+    const ancho = raiz.clientWidth;
+    if (!ancho) return;
+    const nn = Math.max(1, columnas(ancho));
+    if (nn !== n) { n = nn; distribuir(); }
+  };
+  const ro = new ResizeObserver(() => requestAnimationFrame(medir));
+  ro.observe(raiz);
+  raiz.poner = (lista) => {
+    const iguales = lista.length === items.length && lista.every((x, i) => x === items[i]);
+    items = lista;
+    if (!n) medir(); else if (!iguales) distribuir();
+  };
+  raiz.soltar = () => ro.disconnect();
+  return raiz;
+}
+export const columnasExplorar = (w) => (w < 360 ? 1 : w < 640 ? 2 : w < 900 ? 3 : w < 1150 ? 4 : 6);
+export const columnasFeed = (w) => (w < 560 ? 2 : w < 900 ? 3 : 4);
+
+/* ---------- Popover ---------- */
+// Abre un menú anclado a un botón. Cierra con Esc, clic afuera o cerrar().
+export function popover(boton, construir, { lado = "arriba", etiqueta = "Menú" } = {}) {
+  const ancla = boton.closest(".pop-ancla") || boton.parentElement;
+  let caja = null;
+  const cerrar = (devolverFoco = true) => {
+    if (!caja) return;
+    caja.remove(); caja = null;
+    boton.setAttribute("aria-expanded", "false");
+    document.removeEventListener("mousedown", afuera, true);
+    document.removeEventListener("keydown", tecla, true);
+    if (devolverFoco) boton.focus();
+  };
+  const afuera = (e) => { if (caja && !caja.contains(e.target) && !boton.contains(e.target)) cerrar(false); };
+  const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(); } };
+  boton.setAttribute("aria-haspopup", "true");
+  boton.setAttribute("aria-expanded", "false");
+  boton.addEventListener("click", () => {
+    if (caja) { cerrar(); return; }
+    caja = el("div", { class: `pop pop-${lado}`, role: "dialog", "aria-label": etiqueta });
+    agregar(caja, [construir(cerrar)]);
+    ancla.append(caja);
+    boton.setAttribute("aria-expanded", "true");
+    document.addEventListener("mousedown", afuera, true);
+    document.addEventListener("keydown", tecla, true);
+    const f = caja.querySelector('[aria-selected="true"], [aria-pressed="true"], button, input, select');
+    if (f) f.focus();
+  });
+  return { cerrar };
 }
 
 /* ---------- Toast ---------- */
@@ -284,85 +357,103 @@ export function chipEstado(estado, progreso) {
   return el("span", { class: `estado estado-${estado}` }, estado === "generando" && progreso ? `${txt} ${progreso}%` : txt);
 }
 
-/* ---------- Tarjeta de modelo ---------- */
-export function tarjetaModelo(m, { seleccionado, onElegir }) {
+/* ---------- Modelo: sigla, ícono e insignia ---------- */
+export const insigniaDirecto = () => el("span", { class: "insignia insignia-directo", title: "Va directo al proveedor con tu llave" }, "Directo");
+export function iconoModelo(m) {
   // Sigla corta: inicial + versión + inicial extra (Seedance 2.0 Fast → S2.0F).
   const palabras = String(m.nombre || m.id).split(/\s+/).filter(Boolean);
   const iv = palabras.findIndex((w) => /^\d/.test(w));
   let sigla = palabras[0][0];
   if (iv >= 0) sigla += palabras[iv] + (palabras[iv + 1] ? palabras[iv + 1][0] : "");
   else sigla += palabras[1] ? palabras[1][0] : (palabras[0][1] || "");
-  sigla = sigla.slice(0, 5);
-  const b = el("button", { class: "modelo", type: "button", role: "radio", "aria-checked": String(!!seleccionado) },
-    el("span", { class: "modelo-icono" + (sigla.length > 3 ? " modelo-icono-largo" : ""), "aria-hidden": "true" }, sigla.toUpperCase()),
-    el("span", {}, el("strong", {}, m.nombre), el("small", {}, m.etiqueta || m.nota || m.proveedor)),
-    el("span", { class: "modelo-lado" }, m.gasta_creditos_higgsfield ? insigniaCreditos() : null));
-  b.onclick = () => onElegir && onElegir(m);
-  return b;
+  sigla = sigla.slice(0, 5).toUpperCase();
+  return el("span", { class: "modelo-icono" + (sigla.length > 3 ? " modelo-icono-largo" : ""), "aria-hidden": "true" }, sigla);
 }
+export const insigniaModelo = (m) => (m.gasta_creditos_higgsfield ? insigniaCreditos() : insigniaDirecto());
 
 /* ---------- Tarjeta de medio ---------- */
-export function tarjetaMedio(t, { onAbrir, demo = false } = {}) {
-  const tarjeta = el("button", { class: "medio", type: "button" });
+// div.medio > caja del medio + botón que cubre todo (abrir) + capa con prompt y "Recrear".
+export function tarjetaMedio(t, { onAbrir, onRecrear, demo = false } = {}) {
+  const tarjeta = el("div", { class: "medio" });
   let firma = "";
+  tarjeta.trabajo = t;
   tarjeta.actualizar = (nt) => {
-    const f = [nt.estado, nt.progreso, nt.favorito, nt.resultado && nt.resultado.url].join("|");
+    const f = [nt.estado, nt.progreso, nt.favorito, nt.resultado && nt.resultado.url, nt.resultado && nt.resultado.miniatura].join("|");
+    tarjeta.trabajo = nt;
     if (f === firma) return;
     firma = f;
     t = nt;
     pintar();
   };
-  tarjeta.onclick = () => onAbrir && onAbrir(t);
 
   function pintar() {
     const r = t.resultado || {};
     const ar = proporcion(t.ajustes && t.ajustes.formato, r.ancho, r.alto);
+    const [aw, ah] = ar.split("/").map((x) => parseFloat(x));
+    tarjeta.altoRel = aw && ah ? ah / aw : 0.6;
     const caja = el("div", { class: "medio-caja", style: { "--ar": ar } });
     const esDemo = demo || t.demo === true || t.proveedor === "demo";
-    const sinPreview = (texto, clase = "") => {
-      caja.classList.add("sin-medio");
-      return el("div", { class: `medio-pendiente ${clase}` }, ...texto);
+    let video = null;
+    const sinPreview = (hijos, clase = "") => {
+      caja.classList.add("sin-medio", "ruido");
+      caja.style.background = arte(t.id);
+      tarjeta.altoRel = Math.max(tarjeta.altoRel, 0.75);
+      return el("div", { class: `medio-pendiente ${clase}` }, ...hijos);
     };
     if (t.estado === "listo" && r.url && t.tipo === "video") {
       const poster = r.miniatura || null;
-      const v = el("video", { muted: true, loop: true, playsInline: true, preload: poster ? "none" : "metadata", poster, src: r.url, "aria-hidden": "true", tabIndex: -1 });
-      v.muted = true;
-      caja.append(v);
-      const jugar = () => { v.play().catch(() => {}); };
-      const parar = () => { v.pause(); };
-      tarjeta.onmouseenter = jugar; tarjeta.onfocus = jugar;
-      tarjeta.onmouseleave = parar; tarjeta.onblur = parar;
+      video = el("video", { muted: true, loop: true, playsInline: true, preload: poster ? "none" : "metadata", poster, src: r.url, "aria-hidden": "true", tabIndex: -1 });
+      video.muted = true;
+      caja.append(video);
       if (t.ajustes && t.ajustes.duracion) caja.append(el("span", { class: "insignia medio-duracion" }, `${t.ajustes.duracion} s`));
     } else if (t.estado === "listo" && (r.url || r.miniatura)) {
-      // Imagen lista, o trabajo listo sin archivo (demo) que solo trae miniatura.
-      caja.append(el("img", { src: r.miniatura || r.url, alt: t.prompt ? t.prompt.slice(0, 120) : "Vista previa", loading: "lazy" }));
+      caja.append(el("img", { src: r.miniatura || r.url, alt: "", loading: "lazy" }));
     } else if (t.estado === "listo") {
       caja.append(sinPreview([el("strong", {}, "Listo"), el("span", {}, t.nota || "Sin vista previa.")]));
     } else if (t.estado === "fallo" || t.estado === "cancelado") {
       caja.append(sinPreview([el("strong", {}, t.estado === "fallo" ? "No se pudo generar" : "Cancelado"), t.error ? el("span", {}, t.error) : null], "medio-fallo"));
     } else {
       const p = Math.max(0, Math.min(100, t.progreso || 0));
-      caja.style.background = arte(t.id);
       caja.append(sinPreview([
         el("span", { class: "porc" }, `${p}%`),
         el("div", { class: "progreso", role: "progressbar", "aria-valuenow": p, "aria-valuemin": 0, "aria-valuemax": 100, "aria-label": "Progreso" }, el("i", { style: { "--v": `${p}%` } })),
         el("span", {}, t.estado === "en_cola" ? "En cola" : "Generando…")]));
     }
+    const abrir = el("button", { class: "medio-abrir", type: "button",
+      "aria-label": `${t.tipo === "video" ? "Video" : "Imagen"}: ${(t.prompt || "sin prompt").slice(0, 80)}. ${TEXTO_ESTADO[t.estado] || ""}. Abrir` });
+    abrir.onclick = () => onAbrir && onAbrir(t, tarjeta);
+    if (video) {
+      const jugar = () => { video.play().catch(() => {}); };
+      const parar = () => { video.pause(); };
+      tarjeta.onmouseenter = jugar; tarjeta.onmouseleave = parar;
+      abrir.onfocus = jugar; abrir.onblur = parar;
+    }
     const sup = el("div", { class: "medio-sup" },
       t.estado !== "listo" ? chipEstado(t.estado, t.progreso) : null,
       esDemo ? insigniaDemo() : null,
-      t.gasta_creditos_higgsfield || t.proveedor === "higgsfield" ? insigniaCreditos() : null,
-      t.favorito ? el("span", { class: "fav", "aria-label": "Favorito" }, icono("corazon")) : null);
-    const inf = el("div", { class: "medio-inf" }, el("p", {}, t.prompt || "Sin prompt"));
-    limpiar(tarjeta, caja, sup, inf);
-    tarjeta.setAttribute("aria-label", `${t.tipo === "video" ? "Video" : "Imagen"}: ${(t.prompt || "").slice(0, 80)}. ${TEXTO_ESTADO[t.estado] || ""}. Abrir`);
+      t.proveedor === "higgsfield" ? insigniaCreditos() : null,
+      t.favorito ? el("span", { class: "fav", title: "Favorito" }, icono("corazon")) : null);
+    const recrear = onRecrear && t.prompt ? el("button", { class: "btn", type: "button", "aria-label": `Recrear con este prompt y ajustes` }, icono("repetir"), "Recrear") : null;
+    if (recrear) recrear.onclick = (e) => { e.stopPropagation(); onRecrear(t); };
+    const inf = el("div", { class: "medio-inf" },
+      el("p", {}, t.prompt || "Sin prompt"),
+      recrear ? el("div", { class: "medio-acciones" }, recrear) : null);
+    const check = el("span", { class: "medio-check", "aria-hidden": "true" }, icono("check"));
+    limpiar(tarjeta, caja, sup, abrir, inf, check);
   }
   tarjeta.actualizar(t);
   return tarjeta;
 }
 
+// Datos de un trabajo para volver a cargarlo en el generador ("Recrear").
+export function precargaDeTrabajo(t) {
+  const a = { ...(t.ajustes || {}) };
+  delete a.semilla;
+  return { prompt: t.prompt || "", modelo: t.modelo, ajustes: a, estilo: t.estilo || null, camara: t.camara || null };
+}
+
 /* ---------- Visor de trabajo ---------- */
-export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
+export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, onRecrear, demo }) {
   const r = t.resultado || {};
   const medio = el("div", { class: "visor-medio" });
   if (t.estado === "listo" && r.url) {
@@ -372,15 +463,17 @@ export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
   } else if (t.estado === "listo" && r.miniatura) {
     medio.append(el("img", { src: r.miniatura, alt: t.prompt || "Vista previa" }));
   } else {
+    medio.classList.add("ruido");
     medio.style.background = arte(t.id);
-    medio.append(el("div", { class: "medio-pendiente", style: { position: "static", background: "transparent" } },
+    medio.append(el("div", { class: "medio-pendiente", style: { position: "static" } },
       chipEstado(t.estado, t.progreso), t.error ? el("span", {}, t.error) : null));
   }
   const ext = t.tipo === "video" ? "mp4" : "png";
-  const btnFav = el("button", { class: "btn", type: "button", "aria-pressed": String(!!t.favorito) }, icono("corazon"), t.favorito ? "Quitar de favoritos" : "Marcar favorito");
+  const btnFav = el("button", { class: "btn", type: "button", "aria-pressed": String(!!t.favorito) }, icono("corazon"), el("span", {}, t.favorito ? "Quitar favorito" : "Favorito"));
   const btnCopiar = el("button", { class: "btn", type: "button" }, icono("copiar"), "Copiar prompt");
-  const btnRepetir = el("button", { class: "btn", type: "button" }, icono("repetir"), "Repetir");
-  const btnBorrar = el("button", { class: "btn btn-peligro", type: "button" }, icono("borrar"), t.estado === "en_cola" ? "Cancelar y borrar" : "Borrar");
+  const btnRepetir = el("button", { class: "btn", type: "button", title: "Mismos ajustes, semilla nueva" }, icono("repetir"), "Repetir");
+  const btnRecrear = onRecrear ? el("button", { class: "btn", type: "button", title: "Cargar prompt y ajustes en el generador" }, icono("pincel"), "Recrear") : null;
+  const btnBorrar = el("button", { class: "btn btn-peligro", type: "button" }, icono("borrar"), t.estado === "en_cola" ? "Cancelar" : "Borrar");
   const descargar = r.url ? el("a", { class: "btn btn-primario", href: r.url, download: `ponchostudio-${t.id}.${ext}` }, icono("descargar"), "Descargar") : null;
   const cerrarBtn = el("button", { class: "btn-icono visor-cerrar", type: "button", "aria-label": "Cerrar visor" }, icono("x"));
   const a = t.ajustes || {};
@@ -398,8 +491,8 @@ export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
     el("div", { class: "chips" }, chipEstado(t.estado, t.progreso), demo || t.demo || t.proveedor === "demo" ? insigniaDemo() : null),
     el("div", { class: "visor-prompt" }, t.prompt || "Sin prompt"),
     t.nota ? el("p", { class: "nota" }, t.nota) : null,
-    el("dl", { class: "visor-datos" }, datos.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
-    el("div", { class: "visor-acciones" }, descargar, btnRepetir, btnFav, btnCopiar, btnBorrar));
+    el("div", { class: "visor-acciones" }, descargar, btnRecrear, btnRepetir, btnFav, btnCopiar, btnBorrar),
+    el("dl", { class: "visor-datos" }, datos.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])));
   const cerrar = modal([cerrarBtn, medio, info], { clase: "visor", etiqueta: "Visor de trabajo" });
   cerrarBtn.onclick = cerrar;
   btnCopiar.onclick = async () => {
@@ -408,9 +501,10 @@ export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
   };
   btnFav.onclick = async () => {
     const nt = await onFavorito(t).catch(() => null);
-    if (nt) { t = nt; btnFav.setAttribute("aria-pressed", String(!!nt.favorito)); btnFav.lastChild.textContent = nt.favorito ? "Quitar de favoritos" : "Marcar favorito"; }
+    if (nt) { t = nt; btnFav.setAttribute("aria-pressed", String(!!nt.favorito)); btnFav.lastChild.textContent = nt.favorito ? "Quitar favorito" : "Favorito"; }
   };
   btnRepetir.onclick = async () => { const ok = await onRepetir(t).catch(() => false); if (ok) cerrar(); };
+  if (btnRecrear) btnRecrear.onclick = () => { cerrar(); onRecrear(t); };
   btnBorrar.onclick = async () => {
     const si = await confirmar({ titulo: "¿Borrar este trabajo?", texto: "Se quita de la biblioteca. El archivo queda guardado en data/medios.", aceptar: "Borrar", peligro: true });
     if (si && await onBorrar(t).catch(() => false)) cerrar();

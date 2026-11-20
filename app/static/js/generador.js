@@ -1,34 +1,53 @@
-// Piezas compartidas por los generadores de video e imagen:
-// selector de modelos, caja de prompt con "Mejorar prompt", chips de presets,
-// botón Generar con costo en vivo y feed de trabajos que se refresca cada 3 s.
+// Piezas compartidas por los generadores de video e imagen.
+// Distribución: panel izquierdo (modelo + entradas + ajustes), feed central en masonry
+// y barra de prompt flotante abajo. En celular el panel es una hoja inferior.
 import { api, generarConfirmando } from "./api.js";
-import { el, limpiar, icono, tarjetaModelo, toast, usd, abrirVisor, tarjetaMedio, segmentado } from "./ui.js";
+import {
+  el, limpiar, icono, toast, usd, abrirVisor, tarjetaMedio, segmentado, popover, masonry, columnasFeed,
+  iconoModelo, insigniaModelo, precargaDeTrabajo,
+} from "./ui.js";
 
-/* ---------- Selector de modelos ---------- */
-export function selectorModelos({ modelos, valor, onElegir, visibles = 3 }) {
-  const caja = el("div", { class: "panel-bloque" });
-  let abierto = false;
-  const pintar = () => {
-    const elegido = modelos.find((m) => m.id === valor);
-    let lista = modelos;
-    if (!abierto) {
-      lista = modelos.slice(0, visibles);
-      if (elegido && !lista.includes(elegido)) lista = [...lista.slice(0, visibles - 1), elegido];
-    }
-    const grupo = el("div", { class: "modelos", role: "radiogroup", "aria-label": "Modelo" },
-      lista.map((m) => tarjetaModelo(m, { seleccionado: m.id === valor, onElegir: (mm) => { valor = mm.id; pintar(); onElegir(mm); } })));
-    const resto = modelos.length - visibles;
-    limpiar(caja,
-      el("span", { class: "etiqueta" }, "Modelo"),
-      grupo,
-      resto > 0 ? el("button", { class: "btn btn-fantasma btn-chico modelos-mas", type: "button", "aria-expanded": String(abierto),
-        onclick: () => { abierto = !abierto; pintar(); } }, abierto ? "Ver menos modelos" : `Ver ${resto} modelos más`) : null);
+/* ---------- Selector de modelo (menú desplegable con lista rica) ---------- */
+export function selectorModelo({ modelos, valor, onElegir }) {
+  const boton = el("button", { class: "sel-modelo", type: "button", "aria-label": "Elegir modelo" });
+  const ancla = el("div", { class: "pop-ancla" }, boton);
+  const pintarBoton = () => {
+    const m = modelos.find((x) => x.id === valor) || modelos[0];
+    limpiar(boton, iconoModelo(m),
+      el("span", { class: "modelo-txt" }, el("strong", {}, m.nombre), el("small", {}, m.etiqueta || m.proveedor)),
+      insigniaModelo(m), icono("abajo"));
+    boton.setAttribute("aria-label", `Modelo: ${m.nombre}. Cambiar modelo`);
   };
-  pintar();
-  return caja;
+  const opcion = (m, cerrar) => {
+    const b = el("button", { class: "opcion-modelo", type: "button", role: "option", "aria-selected": String(m.id === valor) },
+      iconoModelo(m),
+      el("span", { class: "modelo-txt" }, el("strong", {}, m.nombre), el("small", {}, m.nota || m.etiqueta || m.proveedor)),
+      insigniaModelo(m));
+    b.onclick = () => { valor = m.id; pintarBoton(); cerrar(); onElegir(m); };
+    return b;
+  };
+  popover(boton, (cerrar) => {
+    const directos = modelos.filter((m) => !m.gasta_creditos_higgsfield);
+    const hf = modelos.filter((m) => m.gasta_creditos_higgsfield);
+    const lista = el("div", { class: "lista-modelos", role: "listbox", "aria-label": "Modelos" },
+      directos.length ? el("div", { class: "grupo" }, "Directo con tu llave") : null,
+      directos.map((m) => opcion(m, cerrar)),
+      hf.length ? el("div", { class: "grupo" }, "Por Higgsfield · gasta créditos") : null,
+      hf.map((m) => opcion(m, cerrar)));
+    lista.addEventListener("keydown", (e) => {
+      if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
+      e.preventDefault();
+      const ops = [...lista.querySelectorAll(".opcion-modelo")];
+      const i = ops.indexOf(document.activeElement);
+      ops[(i + (e.key === "ArrowDown" ? 1 : -1) + ops.length) % ops.length].focus();
+    });
+    return lista;
+  }, { lado: "abajo", etiqueta: "Modelos" });
+  pintarBoton();
+  return ancla;
 }
 
-/* ---------- Caja de prompt ---------- */
+/* ---------- Prompt: textarea, mejorar, guardar y motor ---------- */
 function nombreMotor(m) {
   if (!m) return "";
   if (m === "reglas") return "Reglas locales (sin IA)";
@@ -37,32 +56,25 @@ function nombreMotor(m) {
   return b.length ? `${nombre} · ${b.join(":")}` : nombre;
 }
 
-export function cajaPrompt({ tipo, valor = "", salud, modeloActual, onCambio, placeholder }) {
+export function crearPrompt({ tipo, valor = "", salud, modeloActual, onCambio, placeholder }) {
   const id = "prompt-" + tipo;
-  const area = el("textarea", { id, class: "", rows: 5, maxlength: 4000, placeholder, spellcheck: true });
+  const area = el("textarea", { id, rows: 2, maxlength: 4000, placeholder, spellcheck: true, "aria-label": "Prompt: describe lo que quieres generar" });
   area.value = valor;
-  const contador = el("span", { class: "contador", "aria-live": "off" });
-  const actualizarContador = () => { contador.textContent = `${area.value.length}/4000`; };
-  area.addEventListener("input", () => { actualizarContador(); onCambio(area.value); });
-  actualizarContador();
+  const ajustarAlto = () => { area.style.height = "auto"; area.style.height = Math.min(area.scrollHeight, 180) + "px"; };
+  area.addEventListener("input", () => { ajustarAlto(); onCambio(area.value); });
+  requestAnimationFrame(ajustarAlto);
 
   const prov = (salud && salud.proveedores) || {};
   const ollamaListo = !!(prov.ollama && prov.ollama.listo);
   const openaiListo = !!(prov.openai && prov.openai.listo);
-  let motor = "auto";
-  let ollamaModelo = null;
-  let anterior = null;
+  let motor = "auto", ollamaModelo = null, anterior = null;
 
   const usado = el("div", { class: "motor-usado", "aria-live": "polite" });
-  const btnMejorar = el("button", { class: "btn btn-chico", type: "button" }, icono("chispa"), "Mejorar prompt");
-  const btnGuardar = el("button", { class: "btn btn-fantasma btn-chico", type: "button" }, icono("guardar"), "Guardar");
-  const prompt = el("div", { class: "prompt-caja" },
-    el("label", { for: id, class: "solo-lector" }, "Describe lo que quieres generar"),
-    area,
-    el("div", { class: "prompt-barra" }, btnMejorar, btnGuardar, contador));
+  const btnMejorar = el("button", { class: "chip", type: "button", title: "Mejorar el prompt con IA (Ollama primero, gratis)" }, icono("chispa"), "Mejorar");
+  const btnGuardar = el("button", { class: "chip", type: "button", "aria-label": "Guardar prompt", title: "Guardar prompt" }, icono("guardar"));
 
   const selMotor = segmentado({
-    etiqueta: "Motor para mejorar",
+    etiqueta: "Motor para mejorar el prompt",
     opciones: [
       { valor: "auto", texto: "Auto", titulo: "Ollama primero (gratis), luego OpenAI, luego reglas" },
       { valor: "ollama", texto: "Ollama", deshabilitado: !ollamaListo, titulo: ollamaListo ? "Modelos locales, gratis" : "Ollama no está abierto" },
@@ -71,18 +83,15 @@ export function cajaPrompt({ tipo, valor = "", salud, modeloActual, onCambio, pl
     valor: motor,
     onCambio: (v) => { motor = v; selOllama.hidden = v === "openai" || !selOllama.dataset.hay; },
   });
-
   const idSel = id + "-ollama";
   const select = el("select", { class: "entrada", id: idSel });
-  const selOllama = el("div", { class: "campo", hidden: true },
-    el("label", { for: idSel }, "Modelo de Ollama"), select);
+  const selOllama = el("div", { class: "campo", hidden: true }, el("label", { for: idSel }, "Modelo de Ollama"), select);
   select.addEventListener("change", () => { ollamaModelo = select.value || null; });
   if (ollamaListo) {
     api.ollamaModelos({ silencioso: true }).then((r) => {
       const lista = (r && r.modelos) || [];
       if (!lista.length) return;
-      select.replaceChildren(el("option", { value: "" }, "El que elija la app"),
-        ...lista.map((m) => el("option", { value: m.nombre }, m.nombre)));
+      select.replaceChildren(el("option", { value: "" }, "El que elija la app"), ...lista.map((m) => el("option", { value: m.nombre }, m.nombre)));
       selOllama.dataset.hay = "1";
       selOllama.hidden = motor === "openai";
     }).catch(() => {});
@@ -97,18 +106,17 @@ export function cajaPrompt({ tipo, valor = "", salud, modeloActual, onCambio, pl
       const r = await api.mejorar({ prompt: texto, tipo, modelo: modeloActual(), motor, ollama_modelo: ollamaModelo });
       anterior = area.value;
       area.value = r.prompt || area.value;
-      actualizarContador();
-      onCambio(area.value);
+      ajustarAlto(); onCambio(area.value);
       const deshacer = el("button", { class: "btn btn-fantasma btn-chico", type: "button" }, icono("deshacer"), "Deshacer");
       deshacer.onclick = () => {
         if (anterior == null) return;
-        area.value = anterior; anterior = null; actualizarContador(); onCambio(area.value);
+        area.value = anterior; anterior = null; ajustarAlto(); onCambio(area.value);
         limpiar(usado, "Volviste a tu prompt.");
       };
       limpiar(usado, el("span", {}, "Mejorado con ", el("b", {}, nombreMotor(r.motor))), deshacer);
     } catch { /* toast ya mostrado */ } finally {
       btnMejorar.disabled = false;
-      btnMejorar.lastChild.textContent = "Mejorar prompt";
+      btnMejorar.lastChild.textContent = "Mejorar";
     }
   };
   btnGuardar.onclick = async () => {
@@ -118,44 +126,40 @@ export function cajaPrompt({ tipo, valor = "", salud, modeloActual, onCambio, pl
     try { await api.guardarPrompt({ nombre, prompt: texto, tipo }); toast("Prompt guardado.", "ok"); } catch { /* toast */ }
   };
 
-  const caja = el("div", { class: "panel-bloque" },
-    el("span", { class: "etiqueta", "aria-hidden": "true" }, "Prompt"),
-    prompt,
-    el("div", { class: "mejorar-fila", style: { gridTemplateColumns: "1fr" } }, selMotor, selOllama),
-    usado);
-  caja.area = area;
-  caja.fijar = (t) => { area.value = t; actualizarContador(); };
-  return caja;
+  const nodoMotor = el("div", { class: "panel-seccion" }, selMotor, selOllama,
+    el("p", { class: "nota" }, "«Mejorar» usa Ollama si está abierto (gratis); si no, OpenAI o reglas locales."));
+  return { area, usado, btnMejorar, btnGuardar, nodoMotor, fijar: (t) => { area.value = t; ajustarAlto(); } };
 }
 
-/* ---------- Chips de presets ---------- */
-export function chipsPresets({ etiqueta, lista, valor, onCambio, visibles = 8 }) {
-  const caja = el("div", { class: "panel-bloque" });
-  let abierto = false;
+/* ---------- Menú de presets (estilo / cámara) en la barra ---------- */
+export function menuPresets({ etiqueta, iconoNombre, lista, valor, onCambio }) {
+  const boton = el("button", { class: "chip", type: "button" });
+  const ancla = el("div", { class: "pop-ancla" }, boton);
   const pintar = () => {
-    let items = abierto ? lista : lista.slice(0, visibles);
-    const elegido = lista.find((p) => p.id === valor);
-    if (elegido && !items.includes(elegido)) items = [...items, elegido];
-    const grupo = el("div", { class: "chips", role: "group", "aria-label": etiqueta },
-      items.map((p) => el("button", {
-        class: "chip", type: "button", "aria-pressed": String(p.id === valor), title: p.texto,
-        onclick: () => { valor = valor === p.id ? null : p.id; pintar(); onCambio(valor ? p : null); },
-      }, p.origen === "higgsfield" ? el("i", { class: "punto-origen", title: "Aprendido de Higgsfield" }) : null, p.nombre)),
-      lista.length > visibles ? el("button", { class: "chip", type: "button", "aria-expanded": String(abierto), onclick: () => { abierto = !abierto; pintar(); } },
-        abierto ? "Menos" : `+${lista.length - visibles}`) : null);
     const sel = lista.find((p) => p.id === valor);
-    limpiar(caja,
-      el("span", { class: "etiqueta" }, etiqueta, sel ? el("span", { class: "valor" }, sel.nombre) : null),
-      lista.length ? grupo : el("p", { class: "nota" }, "Sin opciones todavía."));
+    limpiar(boton, icono(iconoNombre), sel ? el("span", { class: "valor" }, sel.nombre) : etiqueta);
+    boton.setAttribute("aria-pressed", String(!!sel));
+    boton.setAttribute("aria-label", sel ? `${etiqueta}: ${sel.nombre}. Cambiar` : `Elegir ${etiqueta.toLowerCase()}`);
   };
+  popover(boton, (cerrar) => {
+    const chips = el("div", { class: "chips", role: "group", "aria-label": etiqueta },
+      lista.map((p) => el("button", {
+        class: "chip", type: "button", "aria-pressed": String(p.id === valor), title: p.texto,
+        onclick: () => { valor = valor === p.id ? null : p.id; pintar(); onCambio(valor ? p : null); cerrar(); },
+      }, p.origen === "higgsfield" ? el("i", { class: "punto-origen", title: "Aprendido de Higgsfield" }) : null, p.nombre)));
+    return [
+      el("div", { class: "pop-titulo" }, etiqueta,
+        valor ? el("button", { class: "btn btn-fantasma btn-chico", type: "button", onclick: () => { valor = null; pintar(); onCambio(null); cerrar(); } }, "Quitar") : null),
+      lista.length ? chips : el("p", { class: "nota" }, "Sin opciones todavía. Toca «Aprender de Higgsfield» en Ajustes."),
+    ];
+  }, { lado: "arriba", etiqueta });
   pintar();
-  caja.fijar = (v) => { valor = v; pintar(); };
-  return caja;
+  return ancla;
 }
 
 /* ---------- Botón Generar con costo en vivo ---------- */
 export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar }) {
-  const btn = el("button", { class: "btn btn-primario btn-grande btn-generar", type: "button" });
+  const btn = el("button", { class: "btn btn-primario btn-generar", type: "button" });
   const detalle = el("div", { class: "generar-detalle", "aria-live": "polite" });
   let ultimo = null, temporizador = null, ocupado = false, pedido = 0;
   const pintar = () => {
@@ -166,7 +170,10 @@ export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar }) {
       else if (ultimo.creditos != null) costo = `${ultimo.creditos} créditos`;
       else if (ultimo.usd === null) costo = "usa créditos";
     }
-    limpiar(btn, ocupado ? "Enviando…" : base, !ocupado && costo ? el("span", { class: "costo" }, ` · ${costo}`) : null);
+    if (ocupado) limpiar(btn, "Enviando…");
+    else limpiar(btn, el("span", { class: "txt-largo" }, base), el("span", { class: "txt-corto" }, "Generar"),
+      costo ? el("span", { class: "costo" }, `· ${costo}`) : null);
+    btn.setAttribute("aria-label", costo ? `${base} · ${costo}` : base);
     detalle.textContent = ultimo && ultimo.detalle ? ultimo.detalle : "";
   };
   const recalcular = () => {
@@ -174,10 +181,8 @@ export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar }) {
     pintar();
     temporizador = setTimeout(async () => {
       const mio = ++pedido;
-      try {
-        const r = await api.costo({ tipo, ...cuerpoCosto() });
-        if (mio === pedido) { ultimo = r; pintar(); }
-      } catch { if (mio === pedido) { ultimo = null; pintar(); } }
+      try { const r = await api.costo({ tipo, ...cuerpoCosto() }); if (mio === pedido) { ultimo = r; pintar(); } }
+      catch { if (mio === pedido) { ultimo = null; pintar(); } }
     }, 220);
   };
   btn.onclick = async () => {
@@ -185,10 +190,8 @@ export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar }) {
     ocupado = true; btn.disabled = true; pintar();
     try { await onGenerar(); } finally { ocupado = false; btn.disabled = false; pintar(); }
   };
-  const pie = el("div", { class: "generar-pie" }, btn, detalle);
-  pie.recalcular = recalcular;
   recalcular();
-  return pie;
+  return { btn, detalle, recalcular };
 }
 
 export async function enviarGeneracion(cuerpo) {
@@ -200,8 +203,8 @@ export async function enviarGeneracion(cuerpo) {
   } catch { return null; }
 }
 
-/* ---------- Acciones del visor (compartidas con la biblioteca) ---------- */
-export function accionesVisor({ alCambiar }) {
+/* ---------- Acciones del visor (compartidas con Explorar y Biblioteca) ---------- */
+export function accionesVisor({ alCambiar, irA }) {
   return {
     onFavorito: async (t) => { const nt = await api.favorito(t.id); alCambiar && alCambiar(); return nt; },
     onRepetir: async (t) => {
@@ -212,73 +215,104 @@ export function accionesVisor({ alCambiar }) {
       return true;
     },
     onBorrar: async (t) => { await api.borrar(t.id); toast("Trabajo borrado.", "ok"); alCambiar && alCambiar(); return true; },
+    onRecrear: irA ? (t) => irA(t.tipo === "imagen" ? "imagen" : "video", precargaDeTrabajo(t)) : null,
   };
 }
 
-/* ---------- Feed de trabajos ---------- */
-export function feedTrabajos({ tipo, demo, titulo, vacio }) {
+/* ---------- Feed de trabajos (masonry, se refresca cada 3 s) ---------- */
+export function feedTrabajos({ tipo, demo, vacio, irA }) {
   const tarjetas = new Map();
-  const grilla = el("div", { class: "masonry" });
-  const caja = el("section", { class: "feed", "aria-label": titulo });
+  const grilla = masonry(columnasFeed);
   const estadoVacio = el("div", { class: "vacio" }, el("strong", {}, vacio.titulo), el("span", {}, vacio.texto));
-  const cabeza = el("div", { class: "seccion-cabeza" }, el("h2", {}, titulo),
-    el("a", { class: "btn btn-fantasma btn-chico", href: "#/biblioteca" }, icono("libro"), "Ver biblioteca"));
-  caja.append(cabeza, estadoVacio, el("div", { class: "feed-grilla" }, grilla));
+  const caja = el("div", { class: "feed-grilla" }, estadoVacio, grilla);
   let temporizador = null, vivo = true, primera = true;
 
-  const acciones = accionesVisor({ alCambiar: () => refrescar() });
+  const acciones = accionesVisor({ alCambiar: () => refrescar(), irA });
   const abrir = (t) => abrirVisor(t, { ...acciones, demo });
+  const nueva = (t) => tarjetaMedio(t, { onAbrir: abrir, onRecrear: acciones.onRecrear, demo });
 
   async function refrescar() {
     if (!vivo) return;
     try {
-      const r = await api.trabajos({ tipo, limite: 30 }, { silencioso: !primera });
-      if (!vivo) return;
-      pintar(r.trabajos || []);
+      const r = await api.trabajos({ tipo, limite: 40 }, { silencioso: !primera });
+      if (vivo) pintar(r.trabajos || []);
     } catch { /* sin conexión: se reintenta */ }
     primera = false;
   }
   function pintar(lista) {
     estadoVacio.hidden = lista.length > 0;
     const vistos = new Set();
-    lista.forEach((t, i) => {
+    const nodos = lista.map((t) => {
       vistos.add(t.id);
-      let tarjeta = tarjetas.get(t.id);
-      if (tarjeta) tarjeta.actualizar(t);
-      else { tarjeta = tarjetaMedio(t, { onAbrir: abrir, demo }); tarjetas.set(t.id, tarjeta); }
-      if (grilla.children[i] !== tarjeta) grilla.insertBefore(tarjeta, grilla.children[i] || null);
+      let tj = tarjetas.get(t.id);
+      if (tj) tj.actualizar(t); else { tj = nueva(t); tarjetas.set(t.id, tj); }
+      return tj;
     });
-    for (const [id, nodo] of tarjetas) if (!vistos.has(id)) { nodo.remove(); tarjetas.delete(id); }
+    for (const id of [...tarjetas.keys()]) if (!vistos.has(id)) tarjetas.delete(id);
+    grilla.poner(nodos);
   }
   function ciclo() {
     clearTimeout(temporizador);
-    temporizador = setTimeout(async () => {
-      if (!document.hidden) await refrescar();
-      if (vivo) ciclo();
-    }, 3000);
+    temporizador = setTimeout(async () => { if (!document.hidden) await refrescar(); if (vivo) ciclo(); }, 3000);
   }
   refrescar().then(ciclo);
-  caja.refrescar = refrescar;
   caja.agregar = (trabajos) => {
-    // Muestra de inmediato los trabajos recién creados.
-    const actuales = [...tarjetas.keys()];
     if (trabajos && trabajos.length) {
-      trabajos.forEach((t) => { if (!tarjetas.has(t.id)) { const tj = tarjetaMedio(t, { onAbrir: abrir, demo }); tarjetas.set(t.id, tj); grilla.prepend(tj); } });
-      estadoVacio.hidden = true;
+      const actuales = [...grilla.querySelectorAll(".medio")].map((n) => n.trabajo).filter(Boolean);
+      pintar([...trabajos.filter((t) => !tarjetas.has(t.id)), ...actuales]);
     }
     refrescar();
-    return actuales;
   };
-  caja.parar = () => { vivo = false; clearTimeout(temporizador); };
+  caja.parar = () => { vivo = false; clearTimeout(temporizador); grilla.soltar(); };
   return caja;
 }
 
-/* ---------- Precarga (de plantillas, estudios o repetir) ---------- */
+/* ---------- Armado de la página del generador ---------- */
+export function montarGenerador({ raiz, titulo, secciones, prompt, menus, generar, feed, tituloFeed }) {
+  const btnCerrar = el("button", { class: "btn-icono panel-cerrar", type: "button", "aria-label": "Cerrar ajustes" }, icono("x"));
+  const panel = el("aside", { class: "panel", "aria-label": `Ajustes de ${titulo.toLowerCase()}`, id: "panel-gen" },
+    el("div", { class: "panel-cabeza" }, el("h2", {}, titulo), btnCerrar),
+    el("div", { class: "panel-cuerpo" }, secciones, prompt.nodoMotor));
+  const fondo = el("div", { class: "hoja-fondo", hidden: true });
+  const btnHoja = el("button", { class: "btn-icono btn-hoja", type: "button", "aria-label": "Abrir ajustes del modelo", "aria-controls": "panel-gen", "aria-expanded": "false" }, icono("ajustes"));
+
+  const abrirHoja = () => { panel.classList.add("abierta"); fondo.hidden = false; btnHoja.setAttribute("aria-expanded", "true"); btnCerrar.focus(); };
+  const cerrarHoja = () => { if (!panel.classList.contains("abierta")) return; panel.classList.remove("abierta"); fondo.hidden = true; btnHoja.setAttribute("aria-expanded", "false"); btnHoja.focus(); };
+  btnHoja.onclick = abrirHoja;
+  btnCerrar.onclick = cerrarHoja;
+  fondo.onclick = cerrarHoja;
+  const tecla = (e) => { if (e.key === "Escape" && panel.classList.contains("abierta")) cerrarHoja(); };
+  document.addEventListener("keydown", tecla);
+
+  const barra = el("section", { class: "barra-prompt", "aria-label": "Prompt y generar" },
+    prompt.usado,
+    prompt.area,
+    el("div", { class: "barra-fila" },
+      btnHoja,
+      el("div", { class: "barra-herr" }, menus, prompt.btnMejorar, prompt.btnGuardar),
+      generar.btn),
+    generar.detalle);
+
+  const contenedor = el("div", { class: "generador" },
+    panel,
+    el("section", { class: "feed", "aria-label": tituloFeed },
+      el("div", { class: "feed-cabeza" }, el("h1", {}, tituloFeed),
+        el("a", { class: "btn btn-fantasma btn-chico", href: "#/biblioteca" }, icono("libro"), "Biblioteca")),
+      feed),
+    fondo, barra);
+  // El feed deja espacio para la barra flotante según su alto real.
+  const ro = new ResizeObserver(() => contenedor.style.setProperty("--alto-barra-prompt", barra.offsetHeight + "px"));
+  ro.observe(barra);
+  raiz.append(contenedor);
+  return () => { ro.disconnect(); document.removeEventListener("keydown", tecla); feed.parar(); };
+}
+
+/* ---------- Precarga (de plantillas, estudios o Recrear) ---------- */
 export function aplicarPrecarga(st, precarga) {
   if (!precarga) return;
   if (precarga.prompt) st.prompt = precarga.prompt;
   if (precarga.modelo) st.modelo = precarga.modelo;
-  if (precarga.ajustes) Object.assign(st, precarga.ajustes);
+  if (precarga.ajustes) for (const [k, v] of Object.entries(precarga.ajustes)) if (v !== undefined && v !== null) st[k] = v;
   if (precarga.entradas) Object.assign(st, precarga.entradas);
   if ("estilo" in precarga) st.estilo = precarga.estilo;
   if ("camara" in precarga) st.camara = precarga.camara;

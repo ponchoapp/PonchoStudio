@@ -43,6 +43,37 @@ function aplicarSalud(salud) {
   const demo = !!(salud && salud.demo);
   document.getElementById("franja-demo").hidden = !demo;
   document.body.classList.toggle("con-demo", demo);
+  pintarPastilla(salud);
+}
+
+// Pastilla de la cabecera: modo demo o créditos de Higgsfield.
+async function pintarPastilla(salud) {
+  const p = document.getElementById("pastilla-estado");
+  const txt = p.querySelector(".txt");
+  p.classList.remove("ok");
+  p.onclick = null;
+  if (!salud) { p.hidden = true; return; }
+  if (salud.demo) {
+    txt.textContent = "Demo";
+    p.title = "Modo demostración: toca para pegar tus llaves";
+    p.setAttribute("aria-label", "Modo demostración. Pegar mis llaves");
+    p.onclick = (e) => { e.preventDefault(); import("./llaves.js").then((m) => m.abrirModalLlaves({ alGuardar: () => navegar() })); };
+    p.hidden = false;
+    return;
+  }
+  const hf = salud.proveedores && salud.proveedores.higgsfield;
+  if (hf && hf.conectado) {
+    const e = await api.higgsfieldEstado({ silencioso: true }).catch(() => null);
+    if (e && e.creditos != null) {
+      txt.textContent = `${new Intl.NumberFormat("es-CO").format(e.creditos)} créditos`;
+      p.title = "Créditos de tu cuenta de Higgsfield";
+      p.setAttribute("aria-label", `${txt.textContent} de Higgsfield. Abrir Ajustes`);
+      p.classList.add("ok");
+      p.hidden = false;
+      return;
+    }
+  }
+  p.hidden = true;
 }
 // Cuando se guardan llaves, el backend devuelve la salud nueva.
 document.addEventListener("poncho:salud", (e) => aplicarSalud(e.detail));

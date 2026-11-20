@@ -156,6 +156,18 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
       cuando Poncho tenga la llave. (Audio aún es solo informativo: no hay ruta para generar audio.)
 - [x] Versión **v0.1.0** cerrada. El tag existe en la copia del PC; la sesión en la nube no puede subir tags (proxy 403): Poncho corre `git push --tags` en Windows.
 
+## 5b. Estado 19 nov 20:27
+- En el PC de Poncho la app CORRE (localhost:8010). `.env` con ARK_API_KEY, OPENAI_API_KEY y OLLAMA_MODELO guardadas
+  (desde la ventana de llaves) y `data/higgsfield_token.json` existe: **Seedance, OpenAI, Ollama y Higgsfield conectados**.
+- A Poncho NO le gustó la interfaz v0.1.0. Eligió **"Igual a Higgsfield"**: masonry denso, panel izquierdo angosto de
+  ajustes, feed al centro, barra de prompt flotante abajo, letra chica, negro, violeta solo en foco/botón principal.
+  Rediseño en curso (agente de interfaz, con skill frontend-design).
+- Plantillas sin imagen "no se ven": Explorar mostrará **presets reales de Higgsfield con video de muestra**
+  (GET /api/higgsfield/presets, leído por MCP, gratis) + **sus generaciones** (GET /api/higgsfield/galeria) y botón
+  "Recrear" que carga prompt/ajustes en Seedance directo. En curso (agente backend).
+- Skills: `frontend-design` = la de páginas web (disponible). Remotion en Claude Code:
+  `claude plugin marketplace add remotion-dev/claude-code-plugin` y `claude plugin install remotion@remotion`.
+
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
 - Seedream 5.5 como motor de imagen (más barato que OpenAI, fondo transparente).
