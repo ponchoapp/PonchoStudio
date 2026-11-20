@@ -40,15 +40,11 @@ def url_miniatura(plantilla_id: str) -> str | None:
 
 
 def tamano_para(plantilla: dict) -> str:
-    """Vertical 1024x1536 o horizontal 1536x1024 según el prompt; si no dice, según la categoría."""
-    texto = (plantilla.get("prompt") or "").lower()
-    if any(p in texto for p in ("9:16", "vertical", "portrait orientation", "3:4", "2:3")):
-        return "1024x1536"
-    if any(p in texto for p in ("16:9", "horizontal", "widescreen", "21:9", "landscape", "3:2")):
-        return "1536x1024"
-    if "1:1" in texto or "square" in texto:
-        return "1024x1024"
-    return "1536x1024" if plantilla.get("categoria") == "video" else "1024x1536"
+    """Siempre cuadrada 1024x1024: es la medida que cobra la tarifa más baja (US$0,011 en low).
+
+    Vertical u horizontal cuesta ~US$0,016. Poncho eligió cuadradas (19 nov 2026); la tarjeta recorta al formato.
+    """
+    return "1024x1024"
 
 
 def prompt_para(plantilla: dict) -> str:

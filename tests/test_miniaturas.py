@@ -37,10 +37,9 @@ def test_costo(oai):
 
 
 def test_tamano_y_prompt():
-    assert miniaturas.tamano_para(PLANTILLAS[0]) == "1024x1536"
-    assert miniaturas.tamano_para(PLANTILLAS[1]) == "1536x1024"
-    assert miniaturas.tamano_para({"categoria": "video", "prompt": "16:9 wide city"}) == "1536x1024"
-    assert miniaturas.tamano_para(PLANTILLAS[2]) == "1024x1536"
+    # Siempre cuadradas: es el tamaño de la tarifa baja que se cotiza (US$0,011)
+    for p in PLANTILLAS + [{"categoria": "video", "prompt": "16:9 wide city"}]:
+        assert miniaturas.tamano_para(p) == "1024x1024"
     assert miniaturas.prompt_para(PLANTILLAS[1]) == "cinematic still frame of: A wave breaks at sunset"
     assert miniaturas.prompt_para(PLANTILLAS[2]) == "Portrait of a woman, soft light"
 
@@ -57,7 +56,7 @@ def test_pocas_se_hacen_de_una(oai):
     assert cuerpo == {"hechas": 1, "fallidas": [{"id": "no-existe", "error": "Esa plantilla no existe."}],
                       "costo_usd": 0.011}
     pedido = OPENAI.pedidos[-1]
-    assert pedido["quality"] == "low" and pedido["size"] == "1536x1024"
+    assert pedido["quality"] == "low" and pedido["size"] == "1024x1024"
     assert pedido["prompt"].startswith("cinematic still frame of:")
     assert (oai.PRESETS / "miniaturas" / "playa.png").read_bytes()[:4] == b"\x89PNG"
     plantillas = {p["id"]: p for p in prompts.presets()["plantillas"]}
@@ -79,7 +78,7 @@ def test_lote_en_segundo_plano(oai):
     assert e["costo_usd"] == pytest.approx(0.022)
     assert [f["id"] for f in e["fallidas"]] == ["mala"]
     assert OPENAI.max_activos <= 2
-    assert {p["size"] for p in OPENAI.pedidos if "rapper" in p["prompt"]} == {"1024x1536"}
+    assert {p["size"] for p in OPENAI.pedidos if "rapper" in p["prompt"]} == {"1024x1024"}
 
 
 def test_rutas_en_servidor(servidor):

@@ -81,8 +81,8 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 - `POST /api/plantillas/miniaturas/costo` body `{"ids"?:[str],"calidad"?:"low"}` → `{"total":n,"usd":n×precio}` (low ≈ 0.011 c/u).
 - `POST /api/plantillas/miniaturas` body `{"ids"?:[str],"calidad"?:"low"|"medium"|"high"}`
   Sin `ids`: todas las plantillas sin miniatura. Con `ids`: esas (las regenera aunque ya tengan).
-  Una imagen por plantilla: 1024x1536 si el prompt dice vertical/9:16, 1536x1024 si dice 16:9/horizontal;
-  si no dice, video → horizontal, imagen → vertical. En video el prompt va como `"cinematic still frame of: …"`.
+  Una imagen cuadrada 1024x1024 por plantilla (la tarifa baja que se cotiza; vertical/horizontal costaría ~US$0,016).
+  En video el prompt va como `"cinematic still frame of: …"`.
   - Hasta 2 → `200 {"hechas":n,"fallidas":[{"id","error"}],"costo_usd":x}`.
   - Más de 2 → `202 {"trabajo_id":"m_…"}` en segundo plano (máx 2 en paralelo). Si ya hay un lote corriendo,
     `202 {"trabajo_id":<el actual>,"nota":…}`.
