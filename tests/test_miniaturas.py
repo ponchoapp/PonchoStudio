@@ -98,3 +98,20 @@ def test_rutas_en_servidor(servidor):
     assert requests.get(b + "/api/higgsfield/presets").status_code == 409
     assert requests.post(b + "/api/higgsfield/recrear", json={"preset_id": "p1"}).status_code == 404
     assert requests.post(b + "/api/higgsfield/recrear", json={}).status_code == 400
+
+
+def test_comprimir_png_grande_a_webp(tmp_path):
+    import shutil
+    import subprocess
+    import pytest
+    if not shutil.which("ffmpeg"):
+        pytest.skip("Sin ffmpeg en este equipo")
+    png = tmp_path / "grande.png"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "nullsrc=s=1024x1024,geq=random(1)*255:128:128",
+                    "-frames:v", "1", str(png)], check=True)
+    assert png.stat().st_size > miniaturas.MINIMO_COMPRIMIR
+    quedo = miniaturas.comprimir(png)
+    assert quedo.suffix == ".webp" and quedo.is_file() and not png.exists()
+    chico = tmp_path / "chico.png"
+    chico.write_bytes(b"\x89PNG\r\n\x1a\nfalso")
+    assert miniaturas.comprimir(chico) == chico  # los chicos (o falsos) no se tocan

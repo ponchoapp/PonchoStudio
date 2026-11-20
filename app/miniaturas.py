@@ -9,6 +9,8 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
+import shutil
+import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -18,6 +20,8 @@ from app.proveedores import ErrorProveedor, openai_img
 
 PARALELO = 2
 LIMITE_SINCRONO = 2  # hasta 2 se hacen en la misma petición
+LADO_WEBP = 640       # las miniaturas se muestran chicas: 640 px en WebP pesa ~40 KB (el PNG ~1,4 MB)
+MINIMO_COMPRIMIR = 300_000  # bytes: solo vale la pena con imágenes reales
 
 _candado = threading.Lock()
 _lote: dict = {"trabajo_id": None, "hechas": 0, "total": 0, "costo_usd": 0.0, "fallidas": [], "listo": True}
@@ -35,8 +39,30 @@ def nombre_archivo(plantilla_id: str) -> str:
 
 
 def url_miniatura(plantilla_id: str) -> str | None:
+    """Primero la versión WebP liviana; si no hay, el PNG original."""
     nombre = nombre_archivo(plantilla_id)
-    return f"/presets/miniaturas/{nombre}" if (carpeta() / nombre).is_file() else None
+    for candidato in (nombre[:-4] + ".webp", nombre):
+        if (carpeta() / candidato).is_file():
+            return f"/presets/miniaturas/{candidato}"
+    return None
+
+
+def comprimir(png: Path) -> Path:
+    """PNG grande -> WebP de 640 px con ffmpeg (si está). Devuelve el archivo que quedó."""
+    if not png.is_file() or png.stat().st_size < MINIMO_COMPRIMIR or not shutil.which("ffmpeg"):
+        return png
+    webp = png.with_suffix(".webp")
+    try:
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(png),
+                        "-vf", f"scale={LADO_WEBP}:-2", "-quality", "80", str(webp)],
+                       check=True, capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        webp.unlink(missing_ok=True)
+        return png
+    if webp.is_file() and webp.stat().st_size > 0:
+        png.unlink(missing_ok=True)
+        return webp
+    return png
 
 
 def tamano_para(plantilla: dict) -> str:
@@ -79,7 +105,10 @@ def _una(plantilla: dict, calidad: str) -> None:
     nombres = openai_img.generar(prompt_para(plantilla), calidad, tamano_para(plantilla), n=1)
     carpeta().mkdir(parents=True, exist_ok=True)
     origen = config.cfg.MEDIOS / nombres[0]
-    origen.replace(carpeta() / nombre_archivo(plantilla["id"]))
+    destino = carpeta() / nombre_archivo(plantilla["id"])
+    origen.replace(destino)
+    destino.with_suffix(".webp").unlink(missing_ok=True)  # una regenerada no debe quedar tapada por la vieja
+    comprimir(destino)
 
 
 def _correr(lista: list[dict], calidad: str, estado: dict) -> None:
