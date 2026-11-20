@@ -91,3 +91,10 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 - Nunca imprimir ni devolver llaves. `.env` y `data/` fuera de git.
 - Español de Colombia, frases cortas, botones que dicen lo que hacen.
 - Solo dependencias: starlette, uvicorn, python-multipart, requests (+ pytest en dev).
+
+### Llaves (.env) desde la app
+- `GET /api/llaves` → `{"ARK_API_KEY":{"guardada":bool,"final":"abcd"|null},"OPENAI_API_KEY":{...},"OLLAMA_URL":{"guardada":bool,"valor":str},"OLLAMA_MODELO":{...}}`
+  Nunca devuelve una llave completa: solo los 4 últimos caracteres.
+- `POST /api/llaves` body `{ARK_API_KEY?, OPENAI_API_KEY?, OLLAMA_URL?, OLLAMA_MODELO?}` (vacío = no cambiar)
+  → `{"ok":true,"guardadas":[...],"salud":{...}}` · 400 si algo no sirve · 403 si la petición viene de otra página.
+  Escribe el `.env` conservando las demás líneas y recarga la configuración sin reiniciar.

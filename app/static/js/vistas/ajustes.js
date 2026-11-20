@@ -1,6 +1,7 @@
 // Ajustes: estado de conexiones y guía de llaves.
 import { api } from "../api.js";
 import { el, limpiar, icono, toast, confirmar } from "../ui.js";
+import { abrirModalLlaves } from "../llaves.js";
 
 const luz = (si, txtSi = "Listo", txtNo = "Sin configurar") =>
   el("span", { class: `luz ${si ? "luz-si" : "luz-no"}` }, si ? txtSi : txtNo);
@@ -18,10 +19,12 @@ function tarjeta({ sigla, nombre, sub, estado, cuerpo = [], acciones = [] }) {
 export async function montar(raiz, ctx) {
   const zona = el("div", { class: "conexiones" });
   const btnRevisar = el("button", { class: "btn btn-chico", type: "button" }, icono("repetir"), "Revisar conexiones");
+  const btnLlaves = el("button", { class: "btn btn-primario btn-chico", type: "button" }, icono("llave"), "Pegar mis llaves");
+  btnLlaves.onclick = () => abrirModalLlaves({ alGuardar: () => pintar() });
   raiz.append(el("div", { class: "pagina" },
     el("div", { class: "pagina-cabeza" }, el("h1", {}, "Ajustes"), el("p", {}, "Conexiones de PonchoStudio con cada servicio. Las llaves viven en el archivo .env, nunca en la app.")),
     el("section", { class: "seccion", "aria-labelledby": "con-titulo" },
-      el("div", { class: "seccion-cabeza" }, el("h2", { id: "con-titulo" }, "Conexiones"), btnRevisar),
+      el("div", { class: "seccion-cabeza" }, el("h2", { id: "con-titulo" }, "Conexiones"), el("div", { class: "conexion-acciones" }, btnLlaves, btnRevisar)),
       zona),
     guia()));
 
@@ -93,6 +96,6 @@ function guia() {
       el("li", {}, el("b", {}, "OpenAI: "), "en platform.openai.com → API keys. Es aparte de la suscripción de ChatGPT."),
       el("li", {}, el("b", {}, "Ollama: "), "no lleva llave. Solo ábrelo en este equipo."),
       el("li", {}, el("b", {}, "Higgsfield: "), "no lleva llave. Toca «Conectar Higgsfield» e inicia sesión.")),
-    el("p", { class: "nota" }, "Pon las llaves en el archivo ", el("code", {}, ".env"), " en la carpeta de PonchoStudio (copia ", el("code", {}, "env.ejemplo"), ") y reinicia la app:"),
+    el("p", { class: "nota" }, "Lo más fácil: toca «Pegar mis llaves» arriba. También puedes escribirlas a mano en el archivo ", el("code", {}, ".env"), " de la carpeta de PonchoStudio (copia ", el("code", {}, "env.ejemplo"), ") y reiniciar la app:"),
     el("pre", { class: "codigo" }, "ARK_API_KEY=tu-llave-de-byteplus\nOPENAI_API_KEY=tu-llave-de-openai"));
 }

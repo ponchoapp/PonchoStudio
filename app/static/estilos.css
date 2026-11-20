@@ -359,6 +359,20 @@ select.entrada { appearance: none; padding-right: 36px;
   .visor-medio { height: 100%; }
 }
 
+/* Ventana de llaves */
+.modal-llaves { width: min(520px, 100%); }
+.llaves-form { display: grid; gap: 14px; }
+.llaves-form > p:first-of-type { color: var(--suave); margin-top: -6px; }
+.llave-fila { display: flex; gap: 6px; }
+.llave-fila .entrada { flex: 1; min-width: 0; font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 14px; }
+.llave-ojo { border: 1px solid var(--borde-2); background: var(--s1); flex-shrink: 0; }
+.llave-ojo[aria-pressed="true"] { color: var(--violeta); border-color: var(--violeta); }
+.llave-ayuda { color: var(--tenue); font-weight: 600; font-size: 12px; }
+.llave-estado { font-size: 12px; font-weight: 700; color: var(--tenue); white-space: nowrap; }
+.llave-si { color: #7CF2C6; }
+.llaves-form .campo > label { flex-wrap: wrap; }
+.llaves-privacidad { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(177, 92, 255, .1); color: var(--lila); }
+
 /* ---------- Página ---------- */
 .pagina { padding: 20px var(--gutter) 24px; max-width: 1680px; margin: 0 auto; display: grid; gap: 28px; }
 .pagina-cabeza { display: grid; gap: 6px; }

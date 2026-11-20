@@ -346,6 +346,34 @@ async def ollama_modelos(request: Request):
     return JSONResponse({"modelos": await run_in_threadpool(ollama.modelos)})
 
 
+# ---------------------------------------------------------------- llaves (.env) desde la app
+
+def _origen_local(request: Request) -> bool:
+    """Solo la propia app (localhost) puede tocar las llaves: bloquea que otra página web las cambie."""
+    origen = request.headers.get("origin") or request.headers.get("referer") or ""
+    if not origen:
+        return True
+    from urllib.parse import urlparse
+    return (urlparse(origen).hostname or "") in ("localhost", "127.0.0.1")
+
+
+@manejar_errores
+async def ver_llaves(request: Request):
+    return JSONResponse(config.estado_llaves())
+
+
+@manejar_errores
+async def guardar_llaves(request: Request):
+    if not _origen_local(request):
+        return JSONResponse({"error": "Solo se pueden guardar llaves desde la app en este PC."}, status_code=403)
+    d = await leer_json(request)
+    try:
+        guardadas = await run_in_threadpool(config.guardar_llaves, d)
+    except ValueError as e:
+        raise ErrorValidacion(str(e))
+    return JSONResponse({"ok": True, "guardadas": guardadas, "salud": await run_in_threadpool(_salud)})
+
+
 # ---------------------------------------------------------------- app
 
 class Estaticos(StaticFiles):
@@ -405,6 +433,8 @@ rutas = [
     Route("/api/higgsfield/desconectar", hf_desconectar, methods=["POST"]),
     Route("/api/higgsfield/aprender", hf_aprender, methods=["POST"]),
     Route("/api/ollama/modelos", ollama_modelos, methods=["GET"]),
+    Route("/api/llaves", ver_llaves, methods=["GET"]),
+    Route("/api/llaves", guardar_llaves, methods=["POST"]),
     Mount("/medios", app=Estaticos(directory=str(config.cfg.MEDIOS), check_dir=False), name="medios"),
     Mount("/", app=Estaticos(directory=str(config.cfg.STATIC), html=True, check_dir=False), name="static"),
 ]

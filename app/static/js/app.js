@@ -38,16 +38,20 @@ function leerRuta() {
   return { nombre: VISTAS[nombre] ? nombre : "inicio", params: new URLSearchParams(query || "") };
 }
 
-async function cargarSalud() {
-  try {
-    estado.salud = await api.salud({ silencioso: true });
-  } catch {
-    estado.salud = null;
-  }
-  const demo = !!(estado.salud && estado.salud.demo);
+function aplicarSalud(salud) {
+  estado.salud = salud;
+  const demo = !!(salud && salud.demo);
   document.getElementById("franja-demo").hidden = !demo;
   document.body.classList.toggle("con-demo", demo);
-  return estado.salud;
+}
+// Cuando se guardan llaves, el backend devuelve la salud nueva.
+document.addEventListener("poncho:salud", (e) => aplicarSalud(e.detail));
+
+async function cargarSalud() {
+  let salud = null;
+  try { salud = await api.salud({ silencioso: true }); } catch { salud = null; }
+  aplicarSalud(salud);
+  return salud;
 }
 
 async function navegar() {
@@ -92,4 +96,15 @@ document.querySelector(".saltar").addEventListener("click", (e) => {
   e.preventDefault();
   document.getElementById("contenido").focus();
 });
-cargarSalud().then(navegar);
+// La primera vez en modo demo se abre "Pegar mis llaves" (una sola vez por navegador).
+const CLAVE_LLAVES = "ponchostudio.llaves-ofrecidas";
+function ofrecerLlaves() {
+  if (!estado.salud || !estado.salud.demo) return;
+  let ya = false;
+  try { ya = localStorage.getItem(CLAVE_LLAVES) === "1"; } catch { ya = true; }
+  if (ya) return;
+  try { localStorage.setItem(CLAVE_LLAVES, "1"); } catch { /* sin almacenamiento */ }
+  import("./llaves.js").then((m) => m.abrirModalLlaves({ alGuardar: () => navegar() })).catch(() => {});
+}
+
+cargarSalud().then(() => { navegar(); ofrecerLlaves(); });

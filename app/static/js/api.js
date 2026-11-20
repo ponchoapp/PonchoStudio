@@ -84,6 +84,8 @@ export const api = {
   higgsfieldDesconectar: () => pedir("POST", "/api/higgsfield/desconectar"),
   higgsfieldAprender: () => pedir("POST", "/api/higgsfield/aprender"),
   ollamaModelos: (o) => pedir("GET", "/api/ollama/modelos", undefined, o),
+  llaves: (o) => pedir("GET", "/api/llaves", undefined, o),
+  guardarLlaves: (cuerpo) => pedir("POST", "/api/llaves", cuerpo),
   rutaConectarHiggsfield: "/api/higgsfield/conectar",
 };
 
