@@ -423,7 +423,8 @@ export function tarjetaMedio(t, { onAbrir, onRecrear, demo = false } = {}) {
       "aria-label": `${t.tipo === "video" ? "Video" : "Imagen"}: ${(t.prompt || "sin prompt").slice(0, 80)}. ${TEXTO_ESTADO[t.estado] || ""}. Abrir` });
     abrir.onclick = () => onAbrir && onAbrir(t, tarjeta);
     if (video) {
-      const jugar = () => { video.play().catch(() => {}); };
+      // Sin reproducción automática si el sistema pide menos movimiento.
+      const jugar = () => { if (!matchMedia("(prefers-reduced-motion: reduce)").matches) video.play().catch(() => {}); };
       const parar = () => { video.pause(); };
       tarjeta.onmouseenter = jugar; tarjeta.onmouseleave = parar;
       abrir.onfocus = jugar; abrir.onblur = parar;

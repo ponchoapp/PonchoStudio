@@ -243,7 +243,7 @@ select.entrada { appearance: none; padding-right: 34px;
 /* Chips */
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  min-height: 30px; padding: 0 11px; border-radius: 999px; cursor: pointer;
+  min-height: 32px; padding: 0 12px; border-radius: 999px; cursor: pointer;
   background: rgba(255, 255, 255, .04); border: 1px solid var(--linea); color: var(--suave);
   font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
 }
@@ -572,7 +572,7 @@ select.entrada { appearance: none; padding-right: 34px;
 .aviso-caja { border-radius: 14px; padding: 18px; display: grid; gap: 10px; background: var(--fondo); box-shadow: inset 0 0 0 1px var(--linea); }
 .aviso-caja h2 { font-size: 16px; }
 .aviso-caja p { color: var(--suave); max-width: 70ch; }
-.hero-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.hero-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* ---------- Ajustes ---------- */
 .conexiones { display: grid; gap: 8px; }
