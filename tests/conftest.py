@@ -14,9 +14,11 @@ import requests
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from tests.falsos import escribir_catalogo, puerto_libre  # noqa: E402
+from tests.falsos import ManejadorApagado, arrancar, escribir_catalogo, puerto_libre  # noqa: E402
 
-MUERTO = "http://127.0.0.1:9"  # nada escucha aquí: conexión rechazada al instante
+# Servicio "apagado" que responde 503 al instante. No se usa un puerto cerrado (127.0.0.1:9)
+# porque en Windows la conexión rechazada tarda ~2 s y las pruebas se caen por tiempo.
+_APAGADO, MUERTO = arrancar(ManejadorApagado)
 
 
 def variables_base(datos: Path) -> dict:
@@ -73,9 +75,9 @@ def servidor(tmp_path_factory):
          "--port", str(puerto), "--log-level", "warning"],
         cwd=str(RAIZ), env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     base = f"http://127.0.0.1:{puerto}"
-    for _ in range(100):
+    for _ in range(300):
         try:
-            if requests.get(base + "/api/salud", timeout=1).status_code == 200:
+            if requests.get(base + "/api/salud", timeout=5).status_code == 200:
                 break
         except requests.RequestException:
             pass

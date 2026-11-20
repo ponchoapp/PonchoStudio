@@ -75,6 +75,20 @@ HERRAMIENTAS = [
 ]
 
 
+class ManejadorApagado(Base):
+    """Servicio "apagado": responde 503 al instante a todo.
+
+    En Windows, conectarse a un puerto cerrado tarda ~2 s (reintentos de SYN), así que un puerto
+    sin nadie no sirve para simular "apagado" rápido. Ver docs/ERRORES.md.
+    """
+
+    def _apagado(self):
+        self._cuerpo()
+        self._json(503, {"error": "apagado"})
+
+    do_GET = do_POST = do_DELETE = do_PUT = _apagado
+
+
 class EstadoMCP:
     def __init__(self):
         self.reiniciar()
