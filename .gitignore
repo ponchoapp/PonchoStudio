@@ -1,6 +1,9 @@
 .env
 data/*
+# presets sí van a git, incluidas las miniaturas de plantillas
 !data/presets/
+!data/presets/miniaturas/
+data/presets/*.tmp
 __pycache__/
 *.pyc
 .venv/

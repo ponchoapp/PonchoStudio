@@ -20,7 +20,7 @@ from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, R
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from app import VERSION, catalogo, config, db, prompts, trabajos
+from app import VERSION, catalogo, config, db, miniaturas, prompts, trabajos
 from app.proveedores import ErrorProveedor, higgsfield, ollama, openai_img, seedance
 from app.trabajos import ErrorValidacion, ahora_iso
 
@@ -342,6 +342,69 @@ async def hf_aprender(request: Request):
 
 
 @manejar_errores
+async def hf_galeria(request: Request):
+    if not higgsfield.conectado():
+        return error("Higgsfield no está conectado. Conéctalo primero.", 409)
+    tipo = request.query_params.get("tipo") or None
+    if tipo and tipo not in ("video", "image", "imagen"):
+        raise ErrorValidacion("Tipo no válido. Usa video o image.")
+    datos = await run_in_threadpool(higgsfield.galeria, tipo, request.query_params.get("cursor") or None)
+    return JSONResponse(datos)
+
+
+@manejar_errores
+async def hf_presets(request: Request):
+    q = request.query_params
+    forzar = (q.get("forzar") or "") in ("1", "true")
+    try:
+        datos = await run_in_threadpool(higgsfield.presets_higgsfield, q.get("fuente") or None, forzar)
+    except ErrorProveedor as e:
+        return error(e.mensaje, 409 if e.codigo == 409 else 502)
+    return JSONResponse(datos)
+
+
+@manejar_errores
+async def hf_recrear(request: Request):
+    d = await leer_json(request)
+    pid = d.get("preset_id")
+    if not isinstance(pid, (str, int)) or isinstance(pid, bool) or not str(pid).strip():
+        raise ErrorValidacion("Falta preset_id.")
+    datos = await run_in_threadpool(higgsfield.recrear, str(pid))
+    return JSONResponse(datos) if datos else error("Ese preset no existe.", 404)
+
+
+def _ids_y_calidad(d: dict) -> tuple[list[str] | None, str]:
+    ids = d.get("ids")
+    if ids is not None and (not isinstance(ids, list) or not all(isinstance(i, str) for i in ids)):
+        raise ErrorValidacion("ids debe ser una lista de textos.")
+    calidad = d.get("calidad") or "low"
+    if calidad not in catalogo.PRECIO_IMAGEN:
+        raise ErrorValidacion("Calidad no válida. Usa low, medium o high.")
+    return (ids or None), calidad
+
+
+@manejar_errores
+async def miniaturas_generar(request: Request):
+    ids, calidad = _ids_y_calidad(await leer_json(request, obligatorio=False))
+    try:
+        codigo, cuerpo = await run_in_threadpool(miniaturas.generar, ids, calidad)
+    except ErrorProveedor as e:
+        return error(e.mensaje, 409 if e.codigo == 409 else 502)
+    return JSONResponse(cuerpo, status_code=codigo)
+
+
+@manejar_errores
+async def miniaturas_costo(request: Request):
+    ids, calidad = _ids_y_calidad(await leer_json(request, obligatorio=False))
+    return JSONResponse(await run_in_threadpool(miniaturas.costo, ids, calidad))
+
+
+@manejar_errores
+async def miniaturas_estado(request: Request):
+    return JSONResponse(miniaturas.estado_lote())
+
+
+@manejar_errores
 async def ollama_modelos(request: Request):
     return JSONResponse({"modelos": await run_in_threadpool(ollama.modelos)})
 
@@ -432,10 +495,18 @@ rutas = [
     Route("/api/higgsfield/callback", hf_callback, methods=["GET"]),
     Route("/api/higgsfield/desconectar", hf_desconectar, methods=["POST"]),
     Route("/api/higgsfield/aprender", hf_aprender, methods=["POST"]),
+    Route("/api/higgsfield/galeria", hf_galeria, methods=["GET"]),
+    Route("/api/higgsfield/presets", hf_presets, methods=["GET"]),
+    Route("/api/higgsfield/recrear", hf_recrear, methods=["POST"]),
+    Route("/api/plantillas/miniaturas", miniaturas_generar, methods=["POST"]),
+    Route("/api/plantillas/miniaturas/costo", miniaturas_costo, methods=["POST"]),
+    Route("/api/plantillas/miniaturas/estado", miniaturas_estado, methods=["GET"]),
     Route("/api/ollama/modelos", ollama_modelos, methods=["GET"]),
     Route("/api/llaves", ver_llaves, methods=["GET"]),
     Route("/api/llaves", guardar_llaves, methods=["POST"]),
     Mount("/medios", app=Estaticos(directory=str(config.cfg.MEDIOS), check_dir=False), name="medios"),
+    Mount("/presets/miniaturas", app=Estaticos(directory=str(config.cfg.PRESETS / "miniaturas"), check_dir=False),
+          name="miniaturas"),
     Mount("/", app=Estaticos(directory=str(config.cfg.STATIC), html=True, check_dir=False), name="static"),
 ]
 

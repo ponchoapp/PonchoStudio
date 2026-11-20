@@ -27,13 +27,15 @@ export function selectorModelo({ modelos, valor, onElegir }) {
     return b;
   };
   popover(boton, (cerrar) => {
-    const directos = modelos.filter((m) => !m.gasta_creditos_higgsfield);
-    const hf = modelos.filter((m) => m.gasta_creditos_higgsfield);
+    // Agrupado por proveedor (catálogo): directos primero, Higgsfield al final.
+    const NOMBRES = { seedance: "Seedance · directo con tu llave", openai: "OpenAI · directo con tu llave", higgsfield: "Higgsfield · gasta créditos" };
+    const proveedores = [...new Set(modelos.map((m) => m.proveedor))]
+      .sort((a, b) => (a === "higgsfield") - (b === "higgsfield"));
     const lista = el("div", { class: "lista-modelos", role: "listbox", "aria-label": "Modelos" },
-      directos.length ? el("div", { class: "grupo" }, "Directo con tu llave") : null,
-      directos.map((m) => opcion(m, cerrar)),
-      hf.length ? el("div", { class: "grupo" }, "Por Higgsfield · gasta créditos") : null,
-      hf.map((m) => opcion(m, cerrar)));
+      proveedores.map((pv) => [
+        el("div", { class: "grupo" }, NOMBRES[pv] || pv),
+        modelos.filter((m) => m.proveedor === pv).map((m) => opcion(m, cerrar)),
+      ]));
     lista.addEventListener("keydown", (e) => {
       if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
       e.preventDefault();
