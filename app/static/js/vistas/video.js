@@ -105,10 +105,9 @@ export async function montar(raiz, ctx) {
     textoBase: () => st.variantes > 1 ? `Generar ${st.variantes} videos` : "Generar video",
     onGenerar: async () => {
       if (!st.prompt.trim() && !st.primer_cuadro) { toast("Escribe qué quieres ver en el video.", "info"); prompt.area.focus(); return; }
-      const conFoto = !!st.primer_cuadro || !!st.ultimo_cuadro;
       const trabajos = await enviarGeneracion({
         tipo: "video", modelo: st.modelo, prompt: st.prompt.trim(),
-        ajustes: { resolucion: st.resolucion, formato: modelo().proveedor === "seedance" && conFoto ? "adaptive" : st.formato, duracion: st.duracion, audio: st.audio, semilla: st.semilla, variantes: st.variantes },
+        ajustes: { resolucion: st.resolucion, formato: st.formato, // con foto, el backend pasa a "adaptive" para Seedance duracion: st.duracion, audio: st.audio, semilla: st.semilla, variantes: st.variantes },
         entradas: { primer_cuadro: st.primer_cuadro, ultimo_cuadro: st.ultimo_cuadro, referencias: st.referencias },
         estilo: st.estilo, camara: st.camara,
       });

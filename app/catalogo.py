@@ -45,6 +45,21 @@ VIDEO = [
         "_ratio_adaptativo": True,
     },
     {
+        # Verificado por Poncho en la consola de ModelArk el 19 nov 2026: Model ID y precio (US$/millón de tokens:
+        # 7 sin video de entrada, 4.3 con video). Resoluciones 480p/720p como en Higgsfield (sin confirmar 1080p).
+        "id": "seedance-2.5-flash", "nombre": "Seedance 2.5 Flash", "proveedor": "seedance",
+        "etiqueta": "Directo · borradores baratos",
+        "resoluciones": ["480p", "720p"], "formatos": FORMATOS_VIDEO,
+        "duracion": {"min": 4, "max": 30}, "audio": True,
+        "entradas": ["texto", "primer_cuadro", "ultimo_cuadro", "referencias"],
+        "gasta_creditos_higgsfield": False,
+        "nota": "Casi la calidad de 2.5, el doble de rápido y un 35 % más barato. Ideal para probar.",
+        "_api_id": "dreamina-seedance-2-5-flash-261115",
+        "_tarifa": {"480p": 7.0, "720p": 7.0},
+        "_pixeles": PIXELES,
+        "_ratio_adaptativo": True,
+    },
+    {
         "id": "seedance-2.0", "nombre": "Seedance 2.0", "proveedor": "seedance",
         "etiqueta": "Directo · más barato",
         "resoluciones": ["480p", "720p", "1080p"], "formatos": FORMATOS_VIDEO,
