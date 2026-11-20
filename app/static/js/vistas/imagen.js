@@ -4,7 +4,7 @@ import { api } from "../api.js";
 import { el, limpiar, toast, dropzone, formaIcono, icono, insigniaCreditos } from "../ui.js";
 import {
   selectorModelo, ficha, listaOpciones, pestanas, crearReferencia, crearPrompt, cajaPrompt,
-  menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, feedTrabajos, panelPresets, aplicarPrecarga, montarGenerador,
+  menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, crearComparar, adaptarAjustes, generarPar, feedTrabajos, panelPresets, aplicarPrecarga, montarGenerador,
   leerPestana, guardarPestana,
 } from "../generador.js";
 
@@ -55,14 +55,31 @@ export async function montar(raiz, ctx) {
   ajustarAlModelo();
 
   // Referencias que viajan: imagen a editar primero (gpt-image toma la primera como base), luego la tarjeta y las manuales.
-  const refTarjeta = () => ref.usable(modelo()).url;
-  function refsFinales() {
+  const refTarjeta = (m = modelo()) => ref.usable(m).url;
+  function refsFinales(m = modelo()) {
     const lista = [];
     if (editando() && st.imagenEditar) lista.push(st.imagenEditar);
-    const t = refTarjeta();
+    const t = refTarjeta(m);
     if (t && !lista.includes(t)) lista.push(t);
     return [...lista, ...st.referencias].slice(0, MAX_REFS);
   }
+  // Referencias del segundo modelo de Comparar: solo si SU catálogo las acepta (Higgsfield: solo enlaces públicos).
+  function entradasPara(m) {
+    const notas = [];
+    let refs = !m.entradas || m.entradas.includes("referencias") ? refsFinales(m) : [];
+    if (m.entradas && !m.entradas.includes("referencias") && refsFinales().length) notas.push(`${m.nombre} no acepta referencias: va solo con el prompt.`);
+    if (m.proveedor === "higgsfield") {
+      const publicas = refs.filter((u) => /^https?:\/\//i.test(u));
+      if (publicas.length < refs.length) notas.push("Higgsfield solo recibe enlaces públicos: las referencias locales no viajan al segundo.");
+      refs = publicas;
+    }
+    return { entradas: { primer_cuadro: null, ultimo_cuadro: null, referencias: refs }, notas };
+  }
+  const baseAjustes = () => ({ formato: st.formato, resolucion: st.resolucion, calidad: st.calidad });
+  const adaptarSegundo = (m) => {
+    const a = adaptarAjustes("imagen", baseAjustes(), m), e = entradasPara(m);
+    return { ajustes: a.ajustes, entradas: e.entradas, notas: [...a.notas, ...e.notas] };
+  };
 
   const bloqueEntradas = el("div", { class: "panel-bloque" });
   const notaModelo = el("div", { class: "panel-notas" });
@@ -145,7 +162,7 @@ export async function montar(raiz, ctx) {
     if (tieneCalidad) fCalidad.poner(CALIDADES[st.calidad] || st.calidad);
     if (tieneRes) fResolucion.poner(String(st.resolucion || "").toUpperCase());
     fFormato.poner(st.formato === "auto" ? "Auto" : st.formato);
-    fVariantes.poner(String(st.variantes));
+    fVariantes.poner(comparando() ? "1" : String(st.variantes), comparando() ? "Comparar manda 1 variante a cada modelo." : null);
   }
   function pintarNota() {
     const m = modelo();
@@ -157,6 +174,7 @@ export async function montar(raiz, ctx) {
     ajustarAlModelo();
     fichaModelo.poner({ modelos: disponibles(), valor: st.modelo });
     ref.fijarModelo(modelo());
+    comparar.refrescar();
     pintarEntradas(); pintarFichas(); pintarNota(); generar.recalcular();
   }
 
@@ -179,11 +197,18 @@ export async function montar(raiz, ctx) {
   ];
 
   const vacio = panelPresets({ tipo: "imagen", ctx, modelos, plantillas: presets.plantillas });
-  const feed = feedTrabajos({ tipo: "imagen", demo, irA: ctx.irA, vacio });
+  const feed = feedTrabajos({ tipo: "imagen", demo, irA: ctx.irA, vacio, modelos });
+  const comparar = crearComparar({
+    disponibles, principal: () => st.modelo, adaptar: adaptarSegundo,
+    onCambio: () => { pintarFichas(); generar.recalcular(); },
+  });
+  const comparando = () => comparar.activo();
   const generar = botonGenerar({
     tipo: "imagen",
-    cuerpoCosto: () => ({ modelo: st.modelo, calidad: st.calidad, formato: st.formato, variantes: st.variantes }),
-    textoBase: () => editando() ? (st.variantes > 1 ? `Editar y crear ${st.variantes} imágenes` : "Editar imagen") : (st.variantes > 1 ? `Generar ${st.variantes} imágenes` : "Generar imagen"),
+    cuerpoCosto: () => ({ modelo: st.modelo, calidad: st.calidad, formato: st.formato, variantes: comparando() ? 1 : st.variantes }),
+    segundo: () => (comparando() ? { cuerpoCosto: { modelo: comparar.modelo2().id, ...adaptarSegundo(comparar.modelo2()).ajustes } } : null),
+    alRecalcular: () => comparar.pintarNotas(),
+    textoBase: () => comparando() ? "Generar y comparar" : editando() ? (st.variantes > 1 ? `Editar y crear ${st.variantes} imágenes` : "Editar imagen") : (st.variantes > 1 ? `Generar ${st.variantes} imágenes` : "Generar imagen"),
     onGenerar: async () => {
       if (ref.fase() === "importando") { toast("Espera un momento: la referencia se está agregando.", "info"); return; }
       if (editando() && !st.imagenEditar) { toast("Sube la imagen que quieres editar.", "info"); return; }
@@ -191,6 +216,17 @@ export async function montar(raiz, ctx) {
       const m = modelo();
       const ajustes = { calidad: st.calidad, formato: st.formato, variantes: st.variantes, semilla: st.semilla };
       if ((m.resoluciones || []).length) ajustes.resolucion = st.resolucion;
+      if (comparando()) {
+        const m2 = comparar.modelo2(), s2 = adaptarSegundo(m2);
+        const aA = { calidad: st.calidad, formato: st.formato, variantes: 1, semilla: st.semilla };
+        if ((m.resoluciones || []).length) aA.resolucion = st.resolucion;
+        await generarPar({
+          tipo: "imagen", modelos, feed, notas: s2.notas,
+          cuerpoA: { tipo: "imagen", modelo: st.modelo, prompt: st.prompt.trim(), ajustes: aA, entradas: { primer_cuadro: null, ultimo_cuadro: null, referencias: refsFinales() }, estilo: st.estilo, camara: null },
+          cuerpoB: { tipo: "imagen", modelo: m2.id, prompt: st.prompt.trim(), ajustes: { ...s2.ajustes, semilla: st.semilla }, entradas: s2.entradas, estilo: st.estilo, camara: null },
+        });
+        return;
+      }
       const trabajos = await enviarGeneracion({
         tipo: "imagen", modelo: st.modelo, prompt: st.prompt.trim(), ajustes,
         entradas: { primer_cuadro: null, ultimo_cuadro: null, referencias: refsFinales() },
@@ -220,6 +256,7 @@ export async function montar(raiz, ctx) {
     ref.nodo, bloqueEntradas, cajaPrompt(prompt, menus),
     el("div", { class: "panel-bloque" },
       fichaModelo,
+      comparar.nodo,
       el("div", { class: "fichas" }, fCalidad, fResolucion, fFormato, fVariantes),
       notaModelo),
   ];

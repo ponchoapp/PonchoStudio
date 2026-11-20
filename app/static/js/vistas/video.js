@@ -4,7 +4,7 @@ import { api, importarReferencia } from "../api.js";
 import { el, limpiar, toast, dropzone, formaIcono, icono, insigniaCreditos } from "../ui.js";
 import {
   selectorModelo, ficha, fichaInterruptor, fichaDuracion, listaOpciones, pestanas, crearReferencia, crearPrompt, cajaPrompt,
-  menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, feedTrabajos, panelPresets, aplicarPrecarga, montarGenerador,
+  menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, crearComparar, adaptarAjustes, generarPar, feedTrabajos, panelPresets, aplicarPrecarga, montarGenerador,
   leerPestana, guardarPestana, mensajeImportar, esVideoUrl,
 } from "../generador.js";
 
@@ -59,22 +59,41 @@ export async function montar(raiz, ctx) {
   ajustarAlModelo();
 
   /* ---------- Referencias finales que viajan al backend ---------- */
-  const refTarjeta = () => ref.usable(modelo()).url;
+  const refTarjeta = (m = modelo()) => ref.usable(m).url;
   // Video que se edita: el importado a mano o, si la referencia de Explorar es un video, ese.
   const videoAEditar = () => st.videoEditar ? st.videoEditar.url : (ref.esVideoLista() ? ref.importada().url : null);
-  function refsFinales() {
+  function refsFinales(m = modelo()) {
     const lista = [];
     if (editando()) {
       const v = videoAEditar();
       if (v) lista.push(v);
-      const t = refTarjeta();
+      const t = refTarjeta(m);
       if (t && !lista.includes(t) && !esVideoUrl(t)) lista.push(t); // una imagen de la tarjeta suma como guía
       return lista.slice(0, MAX_REFS);
     }
-    const t = refTarjeta();
+    const t = refTarjeta(m);
     if (t) lista.push(t);
     return [...lista, ...st.referencias].slice(0, MAX_REFS);
   }
+  // Entradas para el segundo modelo de Comparar: solo lo que SU catálogo acepta, avisando lo que se queda fuera.
+  function entradasPara(m) {
+    const ent = m.entradas || ["texto"], notas = [];
+    let refs = ent.includes("referencias") ? refsFinales(m) : [];
+    if (!ent.includes("referencias") && refsFinales().length) notas.push(`${m.nombre} no acepta referencias: va solo con el prompt.`);
+    if (m.proveedor === "higgsfield") {
+      const publicas = refs.filter((u) => /^https?:\/\//i.test(u));
+      if (publicas.length < refs.length) notas.push("Higgsfield solo recibe enlaces públicos: las referencias locales no viajan al segundo.");
+      refs = publicas;
+    }
+    const pc = ent.includes("primer_cuadro") ? st.primer_cuadro : null, uc = ent.includes("ultimo_cuadro") ? st.ultimo_cuadro : null;
+    if ((st.primer_cuadro && !pc) || (st.ultimo_cuadro && !uc)) notas.push(`${m.nombre} no usa cuadros de entrada: se omiten.`);
+    return { entradas: { primer_cuadro: editando() ? null : pc, ultimo_cuadro: editando() ? null : uc, referencias: refs }, notas };
+  }
+  const baseAjustes = () => ({ formato: st.formato, resolucion: st.resolucion, duracion: st.duracion, audio: st.audio });
+  const adaptarSegundo = (m) => {
+    const a = adaptarAjustes("video", baseAjustes(), m), e = entradasPara(m);
+    return { ajustes: a.ajustes, entradas: e.entradas, notas: [...a.notas, ...e.notas] };
+  };
   const hayVideoDeEntrada = () => refsFinales().some(esVideoUrl);
 
   /* ---------- Entradas del panel ---------- */
@@ -204,7 +223,7 @@ export async function montar(raiz, ctx) {
     fFormato.poner(bloqueaFormato ? "Como la foto" : (st.formato === "auto" ? "Auto" : st.formato), bloqueaFormato ? "Con foto de entrada, Seedance toma el formato de la foto." : null);
     fResolucion.poner(st.resolucion);
     fAudio.poner(st.audio, m.audio ? "" : "Sin audio", m.audio ? null : "Este modelo genera video sin audio.");
-    fVariantes.poner(String(st.variantes));
+    fVariantes.poner(comparando() ? "1" : String(st.variantes), comparando() ? "Comparar manda 1 variante a cada modelo." : null);
   }
 
   function pintarNota() {
@@ -218,6 +237,7 @@ export async function montar(raiz, ctx) {
     ajustarAlModelo();
     fichaModelo.poner({ modelos: disponibles(), valor: st.modelo });
     ref.fijarModelo(modelo());
+    comparar.refrescar();
     pintarEntradas(); pintarFichas(); pintarNota(); generar.recalcular();
   }
 
@@ -242,11 +262,19 @@ export async function montar(raiz, ctx) {
 
   /* ---------- Feed, ejemplos y botón Generar ---------- */
   const vacio = panelPresets({ tipo: "video", ctx, modelos, plantillas: presets.plantillas });
-  const feed = feedTrabajos({ tipo: "video", demo, irA: ctx.irA, vacio });
+  const feed = feedTrabajos({ tipo: "video", demo, irA: ctx.irA, vacio, modelos });
+  const comparar = crearComparar({
+    disponibles, principal: () => st.modelo, adaptar: adaptarSegundo,
+    onCambio: () => { pintarFichas(); generar.recalcular(); },
+  });
+  const comparando = () => comparar.activo();
+  const nVar = () => (comparando() ? 1 : st.variantes);
   const generar = botonGenerar({
     tipo: "video",
-    cuerpoCosto: () => ({ modelo: st.modelo, resolucion: st.resolucion, formato: st.formato, duracion: st.duracion, variantes: st.variantes, audio: st.audio }),
-    textoBase: () => editando() ? (st.variantes > 1 ? `Editar y crear ${st.variantes} videos` : "Editar video") : (st.variantes > 1 ? `Generar ${st.variantes} videos` : "Generar video"),
+    cuerpoCosto: () => ({ modelo: st.modelo, resolucion: st.resolucion, formato: st.formato, duracion: st.duracion, variantes: nVar(), audio: st.audio }),
+    segundo: () => (comparando() ? { cuerpoCosto: { modelo: comparar.modelo2().id, ...adaptarSegundo(comparar.modelo2()).ajustes } } : null),
+    alRecalcular: () => comparar.pintarNotas(),
+    textoBase: () => comparando() ? "Generar y comparar" : editando() ? (st.variantes > 1 ? `Editar y crear ${st.variantes} videos` : "Editar video") : (st.variantes > 1 ? `Generar ${st.variantes} videos` : "Generar video"),
     // ModelArk cobra también los tokens del video de entrada y /api/costo solo cuenta el video nuevo.
     aviso: () => (hayVideoDeEntrada() ? "Aproximado: con video de referencia ModelArk también cobra el video de entrada." : ""),
     onGenerar: async () => {
@@ -255,6 +283,20 @@ export async function montar(raiz, ctx) {
         if (!videoAEditar()) { toast("Agrega el video que quieres editar.", "info"); const c = document.getElementById("enlace-video-editar"); if (c) c.focus(); return; }
         if (!st.prompt.trim()) { toast("Escribe qué quieres cambiar en el video.", "info"); prompt.area.focus(); return; }
       } else if (!st.prompt.trim() && !st.primer_cuadro) { toast("Escribe qué quieres ver en el video.", "info"); prompt.area.focus(); return; }
+      if (comparando()) {
+        const m2 = comparar.modelo2(), s2 = adaptarSegundo(m2);
+        await generarPar({
+          tipo: "video", modelos, feed, notas: s2.notas,
+          cuerpoA: {
+            tipo: "video", modelo: st.modelo, prompt: st.prompt.trim(),
+            ajustes: { resolucion: st.resolucion, formato: st.formato, duracion: st.duracion, audio: st.audio, semilla: st.semilla, variantes: 1 },
+            entradas: { primer_cuadro: editando() ? null : st.primer_cuadro, ultimo_cuadro: editando() ? null : st.ultimo_cuadro, referencias: refsFinales() },
+            estilo: st.estilo, camara: st.camara,
+          },
+          cuerpoB: { tipo: "video", modelo: m2.id, prompt: st.prompt.trim(), ajustes: { ...s2.ajustes, semilla: st.semilla }, entradas: s2.entradas, estilo: st.estilo, camara: st.camara },
+        });
+        return;
+      }
       const trabajos = await enviarGeneracion({
         tipo: "video", modelo: st.modelo, prompt: st.prompt.trim(),
         ajustes: { resolucion: st.resolucion, formato: st.formato /* con foto, el backend pasa a "adaptive" */, duracion: st.duracion, audio: st.audio, semilla: st.semilla, variantes: st.variantes },
@@ -286,6 +328,7 @@ export async function montar(raiz, ctx) {
     ref.nodo, bloqueEntradas, cajaPrompt(prompt, menus),
     el("div", { class: "panel-bloque" },
       fichaModelo,
+      comparar.nodo,
       el("div", { class: "fichas" }, fDuracion, fFormato, fResolucion, fAudio, fVariantes),
       notaModelo),
   ];

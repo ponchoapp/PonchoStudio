@@ -122,3 +122,6 @@ export async function generarConfirmando(cuerpo, enviar = api.generar) {
 
 // Descarga un enlace público a medios (gratis, no genera nada). Los errores los maneja quien llama.
 export const importarReferencia = (url) => pedir("POST", "/api/referencias/importar", { url }, { silencioso: true });
+
+// Cotiza varios cuerpos de /api/costo a la vez (Comparar). Un fallo da null en esa posición, no rompe el resto.
+export const costosDe = (cuerpos) => Promise.all(cuerpos.map((c) => api.costo(c).catch(() => null)));

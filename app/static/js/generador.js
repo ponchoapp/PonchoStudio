@@ -2,10 +2,10 @@
 // Distribución (como un estudio de generación): panel izquierdo con pestañas, referencia, prompt y fichas
 // de ajustes; el botón Generar con su costo queda fijo abajo del panel. El centro es el feed de trabajos
 // y, mientras está vacío, ejemplos para elegir. En celular el panel se apila y Generar queda fijo abajo.
-import { api, generarConfirmando, importarReferencia } from "./api.js";
+import { api, generarConfirmando, importarReferencia, costosDe } from "./api.js";
 import {
   el, limpiar, icono, toast, usd, abrirVisor, tarjetaMedio, popover, masonry, columnasFeed,
-  iconoModelo, insigniaCreditos, insigniaDirecto, precargaDeTrabajo, sliderDuracion,
+  iconoModelo, insigniaCreditos, insigniaDirecto, precargaDeTrabajo, sliderDuracion, modal, chipEstado,
 } from "./ui.js";
 import { leerReferencia, guardarReferencia, quitarReferencia, referenciaDe, tarjetaVista, verMedio } from "./tarjetas.js";
 
@@ -507,31 +507,52 @@ export function menuPlantillas({ lista, onElegir }) {
 
 /* ---------- Botón Generar con costo en vivo ---------- */
 // aviso(): texto extra bajo el costo (p. ej. "aproximado" si hay video de referencia).
-export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar, aviso = () => "" }) {
+// segundo(): null o { cuerpoCosto } cuando Comparar está prendido; el botón muestra el costo TOTAL de los dos.
+const textoCosto = (r) => (!r ? "" : r.usd != null ? usd(r.usd) : r.creditos != null ? `${r.creditos} créditos` : "usa créditos");
+export function totalCostos(lista) {
+  const rs = lista.filter(Boolean);
+  const dolares = rs.reduce((s, r) => s + (r.usd != null ? r.usd : 0), 0);
+  const creditos = rs.reduce((s, r) => s + (r.usd == null && r.creditos != null ? r.creditos : 0), 0);
+  const sinPrecio = rs.some((r) => r.usd == null && r.creditos == null);
+  const partes = [];
+  if (dolares > 0) partes.push(usd(dolares));
+  if (creditos > 0) partes.push(`${creditos} créditos`);
+  if (sinPrecio) partes.push("créditos sin precio");
+  return partes.join(" + ");
+}
+
+export function botonGenerar({ tipo, cuerpoCosto, segundo = () => null, textoBase, onGenerar, aviso = () => "", alRecalcular = () => {} }) {
   const btn = el("button", { class: "btn btn-primario btn-generar", type: "button" });
   const detalle = el("div", { class: "generar-detalle", "aria-live": "polite" });
-  let ultimo = null, temporizador = null, ocupado = false, pedido = 0;
+  let ultimo = null, ultimo2 = null, temporizador = null, ocupado = false, pedido = 0;
   const pintar = () => {
     const base = textoBase();
-    let costo = "";
-    if (ultimo) {
-      if (ultimo.usd != null) costo = usd(ultimo.usd);
-      else if (ultimo.creditos != null) costo = `${ultimo.creditos} créditos`;
-      else if (ultimo.usd === null) costo = "usa créditos";
+    const par = !!segundo();
+    let costo = "", det = "";
+    if (par) {
+      if (ultimo && ultimo2) { costo = totalCostos([ultimo, ultimo2]); det = `A ${textoCosto(ultimo)} · B ${textoCosto(ultimo2)}`; }
+    } else if (ultimo) {
+      costo = textoCosto(ultimo); det = ultimo.detalle || "";
     }
     const extra = aviso();
     if (ocupado) limpiar(btn, "Enviando…");
     else limpiar(btn, el("span", { class: "gen-txt" }, base), costo ? el("span", { class: "costo" }, `${extra ? "≈ " : ""}${costo}`) : null);
-    btn.setAttribute("aria-label", costo ? `${base}. Costo ${extra ? "aproximado " : ""}${costo}` : base);
-    limpiar(detalle, ultimo && ultimo.detalle ? ultimo.detalle : "", extra ? el("span", { class: "gen-aviso" }, ` ${extra}`) : null);
+    btn.setAttribute("aria-label", costo ? `${base}. Costo ${par ? "total " : ""}${extra ? "aproximado " : ""}${costo}` : base);
+    limpiar(detalle, det, extra ? el("span", { class: "gen-aviso" }, ` ${extra}`) : null);
   };
   const recalcular = () => {
     clearTimeout(temporizador);
+    alRecalcular();
     pintar();
     temporizador = setTimeout(async () => {
       const mio = ++pedido;
-      try { const r = await api.costo({ tipo, ...cuerpoCosto() }); if (mio === pedido) { ultimo = r; pintar(); } }
-      catch { if (mio === pedido) { ultimo = null; pintar(); } }
+      const seg = segundo();
+      try {
+        const [a, b] = seg
+          ? await costosDe([{ tipo, ...cuerpoCosto() }, { tipo, ...seg.cuerpoCosto }])
+          : [await api.costo({ tipo, ...cuerpoCosto() }), null];
+        if (mio === pedido) { ultimo = a; ultimo2 = b; pintar(); }
+      } catch { if (mio === pedido) { ultimo = null; ultimo2 = null; pintar(); } }
     }, 220);
   };
   btn.onclick = async () => {
@@ -566,6 +587,160 @@ export function accionesVisor({ alCambiar, irA }) {
     onBorrar: async (t) => { await api.borrar(t.id); toast("Trabajo borrado.", "ok"); alCambiar && alCambiar(); return true; },
     onRecrear: irA ? (t) => irA(t.tipo === "imagen" ? "imagen" : "video", precargaDeTrabajo(t)) : null,
   };
+}
+
+/* ---------- Comparar: el mismo prompt en dos modelos ---------- */
+// Se manda con dos POST /api/generar normales. La pareja se recuerda solo en el navegador (localStorage):
+// { id, tipo, a, b (ids de trabajo), prompt, notas, creado }.
+const CLAVE_PARES = "ponchostudio.comparaciones";
+const MAX_PARES = 60;
+
+export function leerPares() {
+  try { const v = JSON.parse(localStorage.getItem(CLAVE_PARES) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function escribirPares(lista) { try { localStorage.setItem(CLAVE_PARES, JSON.stringify(lista.slice(0, MAX_PARES))); } catch { /* sin almacenamiento */ } }
+export function guardarPar(par) { escribirPares([par, ...leerPares().filter((p) => p.id !== par.id)]); }
+export function quitarPar(id) { escribirPares(leerPares().filter((p) => p.id !== id)); }
+
+const razon = (f) => { const [a, b] = String(f).split(":").map(Number); return a > 0 && b > 0 ? a / b : null; };
+const masCercano = (lista, medida, objetivo) =>
+  lista.reduce((mejor, x) => (Math.abs(medida(x) - objetivo) < Math.abs(medida(mejor) - objetivo) ? x : mejor), lista[0]);
+
+// Lleva los ajustes del modelo principal a valores que existen en el catálogo del segundo.
+// base: { formato, resolucion, duracion, audio, calidad }. Devuelve { ajustes, notas }.
+export function adaptarAjustes(tipo, base, m) {
+  const ajustes = {}, notas = [];
+  const fmts = m.formatos || [];
+  if (fmts.length) {
+    if (fmts.includes(base.formato)) ajustes.formato = base.formato;
+    else {
+      const r = razon(base.formato);
+      const validos = fmts.filter((f) => razon(f));
+      const e = r && validos.length ? masCercano(validos, (f) => Math.log(razon(f)), Math.log(r)) : (fmts.includes("16:9") && tipo === "video" ? "16:9" : fmts[0]);
+      ajustes.formato = e;
+      notas.push(`${m.nombre} no tiene el formato ${base.formato === "auto" ? "Auto" : base.formato}: usé ${e === "auto" ? "Auto" : e}.`);
+    }
+  }
+  const res = m.resoluciones || [];
+  if (res.length) {
+    if (res.includes(base.resolucion)) ajustes.resolucion = base.resolucion;
+    else {
+      const n = parseFloat(base.resolucion);
+      const pref = tipo === "video" ? "720p" : "2k";
+      const e = Number.isFinite(n) ? masCercano(res, (x) => parseFloat(x) || 0, n) : (res.includes(pref) ? pref : res[0]);
+      ajustes.resolucion = e;
+      if (base.resolucion) notas.push(`${m.nombre} no tiene la resolución ${String(base.resolucion).toUpperCase()}: usé ${String(e).toUpperCase()}.`);
+    }
+  }
+  if (tipo === "imagen" && (m.calidades || []).length) {
+    if (m.calidades.includes(base.calidad)) ajustes.calidad = base.calidad;
+    else { const e = m.calidades.includes("medium") ? "medium" : m.calidades[0]; ajustes.calidad = e; if (base.calidad) notas.push(`${m.nombre} no tiene calidad «${base.calidad}»: usé «${e}».`); }
+  }
+  if (tipo === "video") {
+    const d = m.duracion || { min: 4, max: 30 };
+    const dur = Math.min(d.max, Math.max(d.min, base.duracion));
+    ajustes.duracion = dur;
+    if (dur !== base.duracion) notas.push(`${m.nombre} admite de ${d.min} a ${d.max} s: usé ${dur} s.`);
+    ajustes.audio = !!base.audio && !!m.audio;
+    if (base.audio && !m.audio) notas.push(`${m.nombre} no genera audio: ese video saldrá sin sonido.`);
+  }
+  ajustes.variantes = 1;
+  return { ajustes, notas };
+}
+
+// Ficha "Comparar" + selector del segundo modelo. adaptar(m2) → { notas } para mostrarlas en vivo.
+export function crearComparar({ disponibles, principal, adaptar, onCambio }) {
+  let activo = false, id2 = null;
+  const otros = () => disponibles().filter((m) => m.id !== principal());
+  const porDefecto = () => { const o = otros(); return o.find((m) => !m.gasta_creditos_higgsfield) || o[0] || null; };
+  const modelo2 = () => otros().find((m) => m.id === id2) || null;
+  const interr = fichaInterruptor({
+    etiqueta: "Comparar",
+    onCambio: (v) => { activo = v; sincronizar(); onCambio(); },
+  });
+  const lista0 = otros().length ? otros() : disponibles();
+  const selector = selectorModelo({
+    modelos: lista0, valor: (porDefecto() || lista0[0]).id, etiqueta: "Segundo modelo",
+    onElegir: (m) => { id2 = m.id; pintarNotas(); onCambio(); },
+  });
+  const notas = el("div", { class: "panel-notas", "aria-live": "polite" });
+  const caja = el("div", { class: "comparar-caja", hidden: true }, selector, notas);
+  const nodo = el("div", { class: "comparar" }, interr, caja);
+
+  function pintarNotas() {
+    const m = modelo2();
+    if (!activo || !m) { limpiar(notas); return; }
+    const { notas: n } = adaptar(m);
+    limpiar(notas,
+      m.gasta_creditos_higgsfield ? el("p", { class: "nota nota-aviso" }, insigniaCreditos(), "Este va por Higgsfield y gasta créditos. Te pido confirmación antes.") : null,
+      n.map((t) => el("p", { class: "nota nota-aviso" }, t)),
+      el("p", { class: "nota" }, "Comparar manda 1 variante a cada modelo, con el mismo prompt y la misma referencia."));
+  }
+  function sincronizar() {
+    const o = otros();
+    if (!o.length) activo = false;
+    if (activo && !modelo2()) { const d = porDefecto(); id2 = d ? d.id : null; }
+    interr.poner(activo, activo ? "Con otro modelo" : "Desactivado", o.length ? null : "No hay otro modelo disponible aquí.");
+    caja.hidden = !activo;
+    if (o.length) selector.poner({ modelos: o, valor: id2 && o.some((m) => m.id === id2) ? id2 : o[0].id });
+    pintarNotas();
+  }
+  sincronizar();
+  return { nodo, modelo2, pintarNotas, activo: () => activo && !!modelo2(), refrescar: sincronizar };
+}
+
+function confirmarPar({ a, b, notas, total }) {
+  return new Promise((resolver) => {
+    let r = false;
+    const fila = (letra, x) => el("li", { class: "cp-fila" },
+      el("span", { class: "cp-letra", "aria-hidden": "true" }, letra),
+      el("span", { class: "cp-nombre" }, el("strong", {}, x.nombre), x.gasta ? insigniaCreditos() : insigniaDirecto()),
+      el("span", { class: "cp-costo" }, x.costo));
+    const si = el("button", { class: "btn btn-primario", type: "button", "data-foco": "" }, total ? `Generar y comparar · ${total}` : "Generar y comparar");
+    const no = el("button", { class: "btn", type: "button" }, "No generar");
+    const cerrar = modal([
+      el("h2", {}, "Generar y comparar"),
+      el("p", {}, "Se mandan dos generaciones con el mismo prompt. Esto cuesta:"),
+      el("ul", { class: "cp-lista" }, fila("A", a), fila("B", b)),
+      el("div", { class: "cp-total" }, el("span", {}, "Total"), el("strong", {}, total || "sin precio")),
+      notas.length ? el("ul", { class: "cp-notas" }, notas.map((t) => el("li", {}, t))) : null,
+      el("div", { class: "modal-acciones" }, no, si),
+    ], { etiqueta: "Confirmar comparación", alCerrar: () => resolver(r) });
+    si.onclick = () => { r = true; cerrar(); };
+    no.onclick = () => cerrar();
+  });
+}
+
+// cuerpoA = modelo principal, cuerpoB = segundo (cuerpos completos de /api/generar).
+// Muestra los costos, pide el sí y manda primero el que gasta créditos de Higgsfield (si lo cancelas, el otro no se manda).
+export async function generarPar({ tipo, modelos, cuerpoA, cuerpoB, notas = [], feed }) {
+  const info = (c) => modelos.find((m) => m.id === c.modelo) || { id: c.modelo, nombre: c.modelo };
+  const costoCuerpo = (c) => ({ tipo, modelo: c.modelo, ...Object.fromEntries(Object.entries(c.ajustes).filter(([k, v]) => k !== "semilla" && v !== null && v !== undefined)) });
+  const [ca, cb] = await costosDe([costoCuerpo(cuerpoA), costoCuerpo(cuerpoB)]);
+  const lado = (c, r) => ({ nombre: info(c).nombre, gasta: !!info(c).gasta_creditos_higgsfield, costo: r ? textoCosto(r) : "precio no disponible" });
+  const sia = await confirmarPar({ a: lado(cuerpoA, ca), b: lado(cuerpoB, cb), notas, total: ca && cb ? totalCostos([ca, cb]) : "" });
+  if (!sia) { toast("No se generó nada. No se gastó nada.", "info"); return null; }
+
+  const orden = info(cuerpoB).gasta_creditos_higgsfield && !info(cuerpoA).gasta_creditos_higgsfield ? ["B", "A"] : ["A", "B"];
+  const cuerpos = { A: cuerpoA, B: cuerpoB }, hechos = {};
+  for (const k of orden) {
+    let r = null;
+    try { r = await generarConfirmando(cuerpos[k]); } catch { r = null; }
+    if (r === null) {
+      const enviado = hechos.A || hechos.B;
+      if (enviado) { toast("Solo se mandó uno de los dos. No armé la comparación; el trabajo enviado queda en el feed.", "error"); feed.agregar(enviado); }
+      else toast("No se generó nada. No se gastó nada.", "info");
+      return null;
+    }
+    hechos[k] = r;
+  }
+  const par = {
+    id: `${hechos.A[0].id}+${hechos.B[0].id}`, tipo, a: hechos.A[0].id, b: hechos.B[0].id,
+    prompt: cuerpoA.prompt, notas, creado: new Date().toISOString(),
+  };
+  feed.agregar([...hechos.A, ...hechos.B], par);
+  toast("Comparación en cola: mira los dos resultados lado a lado.", "ok");
+  return par;
 }
 
 /* ---------- Ejemplos para el centro vacío ---------- */
@@ -637,18 +812,49 @@ export function panelPresets({ tipo, ctx, modelos, plantillas }) {
 
 /* ---------- Feed de trabajos (masonry, se refresca cada 3 s) ---------- */
 // vacio: { titulo, texto } o un nodo ya armado (p. ej. panelPresets); se muestra solo si no hay trabajos.
-export function feedTrabajos({ tipo, demo, vacio, irA }) {
+export function feedTrabajos({ tipo, demo, vacio, irA, modelos = [] }) {
   const tarjetas = new Map();
   const grilla = masonry(columnasFeed);
   const estadoVacio = vacio instanceof Node ? vacio
     : el("div", { class: "vacio" }, el("strong", {}, vacio.titulo), el("span", {}, vacio.texto));
   estadoVacio.hidden = true; // hasta saber si hay trabajos, para que no parpadee
-  const caja = el("div", { class: "feed-grilla" }, estadoVacio, grilla);
-  let temporizador = null, vivo = true, primera = true;
+  const secPares = el("section", { class: "pares", "aria-label": "Comparaciones", hidden: true });
+  const caja = el("div", { class: "feed-grilla" }, estadoVacio, secPares, grilla);
+  let temporizador = null, vivo = true, primera = true, ultima = [];
+  const nodosPar = new Map(); // id de pareja → { nodo, firma }
 
   const acciones = accionesVisor({ alCambiar: () => refrescar(), irA });
   const abrir = (t) => abrirVisor(t, { ...acciones, demo });
   const nueva = (t) => tarjetaMedio(t, { onAbrir: abrir, onRecrear: acciones.onRecrear, demo });
+
+  const nombreModelo = (id) => (modelos.find((m) => m.id === id) || {}).nombre || id;
+  function pieDe(letra, t) {
+    const m = modelos.find((x) => x.id === t.modelo);
+    const creditos = t.proveedor === "higgsfield" || (m && m.gasta_creditos_higgsfield);
+    const esDemo = t.demo === true || t.proveedor === "demo";
+    const costo = esDemo ? "Demo, sin costo" : t.costo_usd != null ? usd(t.costo_usd) : creditos ? "Usa créditos" : "Costo pendiente";
+    const verBtn = el("button", { class: "btn btn-chico", type: "button", "aria-label": `Abrir en el visor la opción ${letra}: ${nombreModelo(t.modelo)}` }, "Abrir en el visor");
+    verBtn.onclick = () => abrir(tarjetas.get(t.id) ? tarjetas.get(t.id).trabajo : t);
+    return el("div", { class: "par-pie" },
+      el("div", { class: "par-nombre" }, el("span", { class: "cp-letra", "aria-hidden": "true" }, letra), el("strong", {}, nombreModelo(t.modelo)), creditos ? insigniaCreditos() : insigniaDirecto()),
+      el("div", { class: "par-meta" }, el("span", {}, costo), chipEstado(t.estado, t.progreso)),
+      verBtn);
+  }
+  function nodoPar(par, tA, tB) {
+    const firma = [tA, tB].map((t) => [t.estado, t.progreso, t.costo_usd, t.modelo].join("|")).join("~");
+    let e = nodosPar.get(par.id);
+    if (e && e.firma === firma) return e.nodo;
+    const quitar = el("button", { class: "btn btn-fantasma btn-chico", type: "button", "aria-label": `Quitar la comparación: ${(par.prompt || "").slice(0, 60)}` }, "Quitar comparación");
+    quitar.onclick = () => { quitarPar(par.id); nodosPar.delete(par.id); pintar(ultima); };
+    const col = (letra, t) => el("article", { class: "par-col", "aria-label": `Opción ${letra}: ${nombreModelo(t.modelo)}` },
+      tarjetas.get(t.id), pieDe(letra, t));
+    const nodo = el("div", { class: "par" },
+      el("div", { class: "par-cabeza" }, el("p", { class: "par-prompt", title: par.prompt || "" }, par.prompt || "Sin prompt"), quitar),
+      el("div", { class: "par-cols" }, col("A", tA), col("B", tB)),
+      par.notas && par.notas.length ? el("p", { class: "nota par-notas" }, "Ajustes del segundo modelo: " + par.notas.join(" ")) : null);
+    nodosPar.set(par.id, { nodo, firma });
+    return nodo;
+  }
 
   async function refrescar() {
     if (!vivo) return;
@@ -659,6 +865,7 @@ export function feedTrabajos({ tipo, demo, vacio, irA }) {
     primera = false;
   }
   function pintar(lista) {
+    ultima = lista;
     estadoVacio.hidden = lista.length > 0;
     const vistos = new Set();
     const nodos = lista.map((t) => {
@@ -668,17 +875,26 @@ export function feedTrabajos({ tipo, demo, vacio, irA }) {
       return tj;
     });
     for (const id of [...tarjetas.keys()]) if (!vistos.has(id)) tarjetas.delete(id);
-    grilla.poner(nodos);
+    // Las parejas (ambos trabajos presentes) van lado a lado arriba; el resto, en la grilla.
+    const porId = new Map(lista.map((t) => [t.id, t]));
+    const pares = leerPares().filter((p) => p.tipo === tipo && porId.has(p.a) && porId.has(p.b));
+    const enPar = new Set(pares.flatMap((p) => [p.a, p.b]));
+    for (const id of [...nodosPar.keys()]) if (!pares.some((p) => p.id === id)) nodosPar.delete(id);
+    secPares.hidden = !pares.length;
+    secPares.replaceChildren(...(pares.length ? [el("h2", { class: "pares-titulo" }, "Comparaciones")] : []),
+      ...pares.map((p) => nodoPar(p, porId.get(p.a), porId.get(p.b))));
+    grilla.poner(nodos.filter((n, i) => !enPar.has(lista[i].id)));
   }
   function ciclo() {
     clearTimeout(temporizador);
     temporizador = setTimeout(async () => { if (!document.hidden) await refrescar(); if (vivo) ciclo(); }, 3000);
   }
   refrescar().then(ciclo);
-  caja.agregar = (trabajos) => {
+  caja.agregar = (trabajos, par) => {
+    if (par) guardarPar(par);
     if (trabajos && trabajos.length) {
-      const actuales = [...grilla.querySelectorAll(".medio")].map((n) => n.trabajo).filter(Boolean);
-      pintar([...trabajos.filter((t) => !tarjetas.has(t.id)), ...actuales]);
+      const nuevos = trabajos.filter((t) => !tarjetas.has(t.id));
+      pintar([...nuevos, ...ultima.filter((t) => !nuevos.some((n) => n.id === t.id))]);
     }
     refrescar();
   };
