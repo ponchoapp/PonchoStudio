@@ -48,6 +48,41 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
   `usage.completion_tokens`.
 - Docs: docs.byteplus.com/en/docs/ModelArk (seedance-2-5, quick-start, model-pricing).
 
+### Seedream 5.5 (BytePlus ModelArk, oficial) — verificado 19 nov 2026
+- Fuentes oficiales: https://docs.byteplus.com/en/docs/ModelArk/seedream-5-5 (tutorial), .../1541523 (API "Generate images"),
+  .../1544106 (precios) y .../1330310 (lista de modelos). Las páginas son SPA: `WebFetch` devuelve solo el menú; el
+  contenido se lee bajando el HTML con `curl` y extrayendo el JSON embebido.
+- Endpoint: `POST https://ark.ap-southeast.bytepluses.com/api/v3/images/generations` con la MISMA `ARK_API_KEY`.
+- **Model ID exacto: `dola-seedream-5-5-261028`** (nombre en doc: "Dola Seedream 5.5"). Configurable con `SEEDREAM_MODEL`.
+- Parámetros que usamos: `model`, `prompt`, `size` ("1K"/"1.5K"/"2K" o `ANCHOxALTO` con total de píxeles 921.600-4.624.220
+  y relación 1/16-16; la app manda píxeles múltiplos de 16), `response_format` (`url` válida 24 h o `b64_json`; usamos b64_json),
+  `output_format` (`png` por defecto en 5.5, o `jpeg`), `watermark` (por defecto TRUE: mandamos false), `background`
+  (`auto` por defecto | `transparent` | `opaque`; transparent exige png), `image` (string o lista; hasta 10 referencias; URL o
+  `data:image/<fmt en minúscula>;base64,...`; jpeg/png/webp/bmp/tiff/gif/heic/heif, hasta 30 MB), `safety_identifier`.
+- NO soporta en 5.5: `seed`, `sequential_image_generation` (varias imágenes), búsqueda web ni `stream`. Por eso "variantes" = pedidos separados.
+- Extras de 5.5 que NO usamos aún: descomposición en capas (`layer_decomposition`, hasta 99 capas) y OCR de texto.
+- Respuesta: `{model, created, data:[{b64_json|url, size, output_format, background}], usage:{generated_images, output_tokens, total_tokens}}`;
+  error: `{error:{code,message}}`; si una imagen falla, `data[i].error`.
+- Precio oficial por imagen de salida: 921.600 ≤ píxeles ≤ 2.601.123 → US$0,020; hasta 4.624.220 → US$0,035
+  (la página de precios es una tabla desordenada al extraerla; la lectura es consistente con llmreference: US$0,02). En esa
+  misma celda aparece un "$0,008" que PODRÍA ser precio por imagen de entrada: SIN confirmar, no se suma al costo.
+  Imágenes no entregadas por moderación no se cobran. Límite: 500 IPM. Fondo transparente nativo (RGBA): confirmado.
+
+### OpenRouter video (plan B de Seedance) — verificado 19 nov 2026
+- Doc oficial: https://openrouter.ai/docs/api/api-reference/video-generation/create-videos.md y guía
+  https://openrouter.ai/blog/tutorials/video-generation-api/ . Base `https://openrouter.ai/api/v1`, `Authorization: Bearer`.
+- `POST /videos` → 202 `{id:"gen-vid-<ts>-<20 car>", polling_url, status}`; `GET /videos/{id}` → `status` pending|in_progress|completed|
+  failed|cancelled|expired, `urls` (firmadas, sin llave) y/o `unsigned_urls` (con llave), `usage:{cost (US$), is_byok}`;
+  `GET /videos/{id}/content?index=0` con llave. Errores `{error:{code,message}}` (401, 402 sin saldo, 403, 429...).
+- Cuerpo: `model`, `prompt`, `aspect_ratio`, `resolution`, `duration` (entero), `generate_audio`, `seed`, `frame_images`
+  (`{type:"image_url",image_url:{url},frame_type:"first_frame"|"last_frame"}`), `input_references` (image_url|audio_url|video_url;
+  audio y video solo en algunos proveedores), `callback_url`, `provider`.
+- Slugs (de las páginas de modelo): `bytedance/seedance-2.5`, `bytedance/seedance-2.5-flash`, `bytedance/seedance-2.0`,
+  `bytedance/seedance-2.0-fast`. Precio "desde" por segundo (proveedor Seed): 2.5 US$0,1028 · 2.5 Flash 0,06726 · 2.0 0,06726 ·
+  2.0 Fast 0,0538. Sin desglose por resolución: el costo mostrado es aproximado y el real sale de `usage.cost`.
+- Sin confirmar: `GET /videos/models` (forma exacta de la respuesta), cómo cancelar un trabajo, y si cada parámetro lo acepta el
+  proveedor que atienda (la doc dice que puede rechazarlo). El rol "adaptive" no existe en su enum: con foto de entrada no mandamos `aspect_ratio`.
+
 ### OpenAI imágenes
 - `POST https://api.openai.com/v1/images/generations` y `/v1/images/edits` (acepta `image[]` repetido).
 - Modelo que usa Poncho OS: `gpt-image-2` (no acepta fondo transparente → pedir fondo blanco liso).

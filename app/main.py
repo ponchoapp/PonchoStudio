@@ -22,7 +22,7 @@ from starlette.staticfiles import StaticFiles
 
 from app import referencias
 from app import VERSION, catalogo, config, db, miniaturas, prompts, trabajos
-from app.proveedores import ErrorProveedor, higgsfield, ollama, openai_img, seedance
+from app.proveedores import ErrorProveedor, higgsfield, ollama, openai_img, openrouter, seedance, seedream
 from app.trabajos import ErrorValidacion, ahora_iso
 
 MAX_SUBIDA = 50 * 1024 * 1024
@@ -94,16 +94,22 @@ def _salud() -> dict:
     modelos_ollama = [m["nombre"] for m in ollama.modelos()]
     ark = seedance.disponible()
     oai = openai_img.disponible()
+    orr = openrouter.disponible()
+    sdr = seedream.disponible()
     hf = higgsfield.conectado()
     return {
         "version": VERSION,
         "proveedores": {
             "seedance": {"listo": ark, "motivo": "Llave lista." if ark else "Falta ARK_API_KEY en el .env."},
+            "seedream": {"listo": sdr, "modelo": c.SEEDREAM_MODEL,
+                         "motivo": "Llave lista (la misma de Seedance)." if sdr else "Falta ARK_API_KEY en el .env."},
+            "openrouter": {"listo": orr, "motivo": "Llave lista. Plan B de Seedance." if orr
+                           else "Sin llave. Es opcional: plan B si Seedance directo falla."},
             "openai": {"listo": oai, "motivo": "Llave lista." if oai else "Falta OPENAI_API_KEY en el .env."},
             "ollama": {"listo": bool(modelos_ollama), "modelos": modelos_ollama},
             "higgsfield": {"listo": bool(c.HIGGSFIELD_MCP_URL), "conectado": hf},
         },
-        "demo": not (ark or oai or hf),
+        "demo": not (ark or oai or hf or orr),
     }
 
 
@@ -134,8 +140,9 @@ async def ver_costo(request: Request):
         raise ErrorValidacion("La duración debe ser un número.")
     if tipo == "audio" and not modelo.get("gasta_creditos_higgsfield"):
         raise ErrorValidacion("No hay precio para ese modelo.")
+    via = trabajos.via_inicial(modelo["proveedor"]) if tipo == "video" else None
     return JSONResponse(catalogo.costo(tipo, modelo["id"], d.get("resolucion"), d.get("formato"),
-                                       duracion, variantes, d.get("calidad")))
+                                       duracion, variantes, d.get("calidad"), via))
 
 
 # ---------------------------------------------------------------- generar y subir

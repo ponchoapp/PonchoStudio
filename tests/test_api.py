@@ -29,6 +29,8 @@ def test_salud(servidor):
     p = r["proveedores"]
     assert p["seedance"] == {"listo": False, "motivo": p["seedance"]["motivo"]}
     assert p["openai"]["listo"] is False
+    assert p["openrouter"]["listo"] is False and p["seedream"]["listo"] is False
+    assert p["seedream"]["modelo"] == "dola-seedream-5-5-261028"
     assert p["ollama"] == {"listo": False, "modelos": []}
     assert p["higgsfield"]["conectado"] is False
 

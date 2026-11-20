@@ -319,6 +319,8 @@ class EstadoArk:
         self.cuerpos = []
         self.consultas = 0
         self.forzar_codigo = None
+        self.imagenes = []        # cuerpos recibidos en /images/generations
+        self.fallar_sondeo = False
 
 
 ARK = EstadoArk()
@@ -336,13 +338,36 @@ class ManejadorArk(Base):
             return
         cuerpo = json.loads(self._cuerpo())
         if ARK.forzar_codigo:
-            return self._json(ARK.forzar_codigo, {"error": {"message": "forzado"}})
+            return self._json(ARK.forzar_codigo, {"error": {"code": "Forzado", "message": "forzado"}})
+        if self.path.endswith("/images/generations"):
+            return self._imagen(cuerpo)
         ARK.cuerpos.append(cuerpo)
         tid = f"cgt-{len(ARK.cuerpos)}"
         ARK.tareas[tid] = {"consultas": 0}
         self._json(200, {"id": tid})
 
+    def _imagen(self, cuerpo: dict):
+        """Imita POST /images/generations de ModelArk (docs.byteplus.com/en/docs/ModelArk/1541523)."""
+        ARK.imagenes.append(cuerpo)
+        png = base64.b64decode(PNG_1X1_B64)
+        if cuerpo.get("response_format") == "url":
+            item = {"url": ARK.base + "/imagen.png", "size": cuerpo.get("size")}
+        else:
+            item = {"b64_json": base64.b64encode(png).decode(), "size": cuerpo.get("size")}
+        item.update(output_format=cuerpo.get("output_format", "png"),
+                    background="transparent" if cuerpo.get("background") == "transparent" else "opaque")
+        self._json(200, {"model": cuerpo.get("model"), "created": 1789480874, "data": [item],
+                         "usage": {"generated_images": 1, "output_tokens": 16384, "total_tokens": 16384}})
+
     def do_GET(self):
+        if self.path == "/imagen.png":
+            cuerpo = base64.b64decode(PNG_1X1_B64)
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.end_headers()
+            self.wfile.write(cuerpo)
+            return
         if self.path == "/video.mp4":
             cuerpo = b"video-falso-de-seedance"
             self.send_response(200)
@@ -359,6 +384,8 @@ class ManejadorArk(Base):
             return self._json(404, {"error": {"message": "no task"}})
         tarea["consultas"] += 1
         ARK.consultas += 1
+        if ARK.fallar_sondeo:
+            return self._json(200, {"id": tid, "status": "failed", "error": {"code": "x", "message": "sin cuota"}})
         if tarea["consultas"] < 2:
             return self._json(200, {"id": tid, "status": "running"})
         self._json(200, {"id": tid, "status": "succeeded",
@@ -369,6 +396,70 @@ class ManejadorArk(Base):
         if not self._auth():
             return
         self._json(200, {})
+
+
+PNG_1X1_B64 = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+
+
+# ---------------------------------------------------------------- OpenRouter falso (video)
+
+class EstadoOR:
+    def __init__(self):
+        self.reiniciar()
+
+    def reiniciar(self):
+        self.base = ""
+        self.cuerpos = []       # POST /videos recibidos
+        self.sondeos = 0
+        self.descargas_con_llave = 0
+        self.forzar_codigo = None
+
+
+OR = EstadoOR()
+ID_OR = "gen-vid-1789480874-Ab3dEf9hIjKlMnOpQrSt"
+
+
+class ManejadorOpenRouter(Base):
+    """Imita la API de video de OpenRouter (openrouter.ai/docs/api/api-reference/video-generation/create-videos):
+    POST /api/v1/videos -> 202 {id, polling_url, status}; GET /api/v1/videos/{id}; GET .../content?index=0."""
+
+    def _auth(self) -> bool:
+        if self.headers.get("Authorization") != "Bearer llave-or":
+            self._json(401, {"error": {"code": 401, "message": "No auth credentials found"}})
+            return False
+        return True
+
+    def do_POST(self):
+        cuerpo = json.loads(self._cuerpo())
+        if not self._auth():
+            return
+        if OR.forzar_codigo:
+            return self._json(OR.forzar_codigo, {"error": {"code": OR.forzar_codigo, "message": "forzado"}})
+        OR.cuerpos.append(cuerpo)
+        self._json(202, {"id": ID_OR, "generation_id": ID_OR, "polling_url": f"/api/v1/videos/{ID_OR}",
+                         "status": "pending", "status_detail": "queued_at_provider"})
+
+    def do_GET(self):
+        if not self._auth():
+            return
+        if self.path.startswith(f"/api/v1/videos/{ID_OR}/content"):
+            OR.descargas_con_llave += 1
+            cuerpo = b"video-falso-de-openrouter"
+            self.send_response(200)
+            self.send_header("Content-Type", "video/mp4")
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.end_headers()
+            self.wfile.write(cuerpo)
+            return
+        if self.path != f"/api/v1/videos/{ID_OR}":
+            return self._json(404, {"error": {"code": 404, "message": "not found"}})
+        OR.sondeos += 1
+        if OR.sondeos < 2:
+            return self._json(200, {"id": ID_OR, "polling_url": f"/api/v1/videos/{ID_OR}",
+                                    "status": "in_progress", "status_detail": "generating", "progress": 40})
+        self._json(200, {"id": ID_OR, "generation_id": ID_OR, "polling_url": f"/api/v1/videos/{ID_OR}",
+                         "status": "completed", "unsigned_urls": [f"{OR.base}/api/v1/videos/{ID_OR}/content?index=0"],
+                         "usage": {"cost": 0.5, "is_byok": False}})
 
 
 # ---------------------------------------------------------------- Ollama falso

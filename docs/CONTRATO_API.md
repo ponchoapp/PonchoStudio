@@ -32,7 +32,7 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 
 ## Rutas
 ### Estado
-- `GET /api/salud` → `{"version":"0.1.0","proveedores":{"seedance":{"listo":bool,"motivo":str},"openai":{...},"ollama":{"listo":bool,"modelos":[str]},"higgsfield":{"listo":bool,"conectado":bool}}, "demo": bool}`
+- `GET /api/salud` → `{"version":"0.1.0","proveedores":{"seedance":{"listo":bool,"motivo":str},"seedream":{"listo":bool,"modelo":str,"motivo":str},"openrouter":{"listo":bool,"motivo":str},"openai":{...},"ollama":{"listo":bool,"modelos":[str]},"higgsfield":{"listo":bool,"conectado":bool}}, "demo": bool}`
   `demo` = true si no hay ninguna llave: los trabajos se simulan con medios de muestra.
 
 ### Catálogo
@@ -43,10 +43,16 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
    "gasta_creditos_higgsfield":false, "nota": str}`
   Campos para el selector de modelos (todos los modelos): `descripcion` (texto corto, "" si no hay), `nuevo` (bool; solo con dato
   verificado, hoy Seedance 2.5 Flash) y `destacado` (bool; curaduría en `catalogo.DESTACADOS_HF` y en cada modelo directo).
+  Seedream 5.5 (v0.3.0): `{"id":"seedream-5.5","proveedor":"seedream","calidades":[],"resoluciones":["1k","2k"],
+   "formatos":["1:1","2:3","3:2","3:4","4:3","9:16","16:9"],"variantes_max":4,"nuevo":true,...}`. Una imagen por pedido
+   (cada variante es un trabajo aparte). Usa `ARK_API_KEY`; Model ID en `SEEDREAM_MODEL`. Sin llave: modo demo.
   Modelos de imagen: `{"id":"gpt-image-2", "proveedor":"openai", "calidades":["low","medium","high"], "formatos":["1:1","2:3","3:2"], "variantes_max":4, ...}`
   Modelos de Higgsfield aparecen con `"proveedor":"higgsfield","gasta_creditos_higgsfield":true`.
 - `POST /api/costo` body `{"tipo":"video","modelo":"seedance-2.5","resolucion":"720p","formato":"9:16","duracion":5,"variantes":1}`
   → `{"usd":0.51,"detalle":"tokens ..."}`. Imagen: la tarifa depende del tamaño (`formato` 1:1 = 1024x1024; 2:3 y 3:2 = tarifa mayor).
+  Seedream 5.5: tarifa oficial por imagen de salida: 0,020 si el tamaño es hasta ~2,6 M píxeles (1k), 0,035 hasta ~4,6 M (2k);
+  `detalle` avisa que las referencias podrían sumar un cargo pequeño (sin confirmar). Video con plan B (sin `ARK_API_KEY`
+  pero con `OPENROUTER_API_KEY`): estimado "desde" US$/s de OpenRouter, `detalle` dice "aproximado".
   El video de referencia NO cambia el precio calculado (ModelArk cobra también el video de entrada): la interfaz lo marca como aproximado. (Higgsfield → `{"usd":null,"creditos":n|null,"detalle":"..."}`).
 
 ### Generar
@@ -59,6 +65,9 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
    "estilo":"id-preset"|null, "camara":"id-preset"|null,
    "confirmar_creditos": false}
   ```
+  Plan B de video (v0.3.0): si Seedance directo no está disponible (sin `ARK_API_KEY`) o BytePlus RECHAZA la creación con
+  401/403 y hay `OPENROUTER_API_KEY`, el trabajo va por OpenRouter: `Trabajo.nota` = "Enviado por OpenRouter (plan B)…",
+  `costo_usd` = estimado y luego el `usage.cost` real. Una tarea ya creada en BytePlus NUNCA se reenvía (sin doble gasto).
   Referencias: Seedance acepta imagen, video y audio; los demás modelos (gpt-image-2, Higgsfield) solo imágenes
   (`400` si llega un video o audio). Higgsfield solo recibe enlaces `http(s)` públicos.
   → `201 {"trabajos":[Trabajo]}`. Si el modelo gasta créditos de Higgsfield y `confirmar_creditos` no es true
@@ -122,9 +131,9 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 - Solo dependencias: starlette, uvicorn, python-multipart, requests (+ pytest en dev).
 
 ### Llaves (.env) desde la app
-- `GET /api/llaves` → `{"ARK_API_KEY":{"guardada":bool,"final":"abcd"|null},"OPENAI_API_KEY":{...},"OLLAMA_URL":{"guardada":bool,"valor":str},"OLLAMA_MODELO":{...}}`
+- `GET /api/llaves` → `{"ARK_API_KEY":{"guardada":bool,"final":"abcd"|null},"OPENAI_API_KEY":{...},"OPENROUTER_API_KEY":{...},"SEEDREAM_MODEL":{"guardada":bool,"valor":str},"OLLAMA_URL":{"guardada":bool,"valor":str},"OLLAMA_MODELO":{...}}`
   Nunca devuelve una llave completa: solo los 4 últimos caracteres.
-- `POST /api/llaves` body `{ARK_API_KEY?, OPENAI_API_KEY?, OLLAMA_URL?, OLLAMA_MODELO?}` (vacío = no cambiar)
+- `POST /api/llaves` body `{ARK_API_KEY?, OPENAI_API_KEY?, OPENROUTER_API_KEY?, SEEDREAM_MODEL?, OLLAMA_URL?, OLLAMA_MODELO?}` (vacío = no cambiar)
   → `{"ok":true,"guardadas":[...],"salud":{...}}` · 400 si algo no sirve · 403 si la petición viene de otra página.
   Escribe el `.env` conservando las demás líneas y recarga la configuración sin reiniciar.
 

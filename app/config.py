@@ -14,6 +14,11 @@ RAIZ = Path(__file__).resolve().parent.parent
 VALORES_POR_DEFECTO = {
     "ARK_API_KEY": "",
     "SEEDANCE_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
+    # Seedream 5.5 (imágenes) usa la misma ARK_API_KEY. Model ID oficial: docs.byteplus.com/en/docs/ModelArk/seedream-5-5
+    "SEEDREAM_MODEL": "dola-seedream-5-5-261028",
+    # OpenRouter: plan B de Seedance (video). Doc: openrouter.ai/docs/api/api-reference/video-generation/create-videos
+    "OPENROUTER_API_KEY": "",
+    "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
     "OPENAI_API_KEY": "",
     "OPENAI_IMAGE_MODEL": "gpt-image-2",
     "OPENAI_TEXT_MODEL": "gpt-5-mini",
@@ -24,7 +29,7 @@ VALORES_POR_DEFECTO = {
     "DATA_DIR": "./data",
 }
 
-LLAVES_SECRETAS = {"ARK_API_KEY", "OPENAI_API_KEY"}
+LLAVES_SECRETAS = {"ARK_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY"}
 
 
 def leer_env(ruta: Path) -> dict[str, str]:
@@ -62,11 +67,12 @@ class Config:
                 valor = archivo.get(clave, defecto)
             setattr(self, clave, (valor or "").strip())
         # Valores por defecto si quedaron vacíos (menos las llaves y OLLAMA_MODELO)
-        for clave in ("SEEDANCE_BASE_URL", "OPENAI_IMAGE_MODEL", "OPENAI_TEXT_MODEL",
+        for clave in ("SEEDANCE_BASE_URL", "SEEDREAM_MODEL", "OPENROUTER_BASE_URL", "OPENAI_IMAGE_MODEL", "OPENAI_TEXT_MODEL",
                       "OLLAMA_URL", "HIGGSFIELD_MCP_URL", "PUERTO", "DATA_DIR"):
             if not getattr(self, clave):
                 setattr(self, clave, VALORES_POR_DEFECTO[clave])
         self.SEEDANCE_BASE_URL = self.SEEDANCE_BASE_URL.rstrip("/")
+        self.OPENROUTER_BASE_URL = self.OPENROUTER_BASE_URL.rstrip("/")
         self.OLLAMA_URL = self.OLLAMA_URL.rstrip("/")
         try:
             self.PUERTO = int(self.PUERTO)
@@ -104,7 +110,8 @@ def crear_carpetas(c: "Config") -> None:
 cfg = Config()
 
 
-EDITABLES_DESDE_APP = ("ARK_API_KEY", "OPENAI_API_KEY", "OLLAMA_URL", "OLLAMA_MODELO")
+EDITABLES_DESDE_APP = ("ARK_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "SEEDREAM_MODEL",
+                       "OLLAMA_URL", "OLLAMA_MODELO")
 
 
 def estado_llaves() -> dict:

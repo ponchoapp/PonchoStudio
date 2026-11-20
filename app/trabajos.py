@@ -1,6 +1,9 @@
 """Cola de trabajos: valida, crea y sigue cada generación en un hilo de fondo.
 
 - Seedance: máximo 3 tareas a la vez en ModelArk; el resto queda en_cola local.
+- Plan B de Seedance: OpenRouter (tarea_remota con prefijo "or:"). Solo si Seedance directo no está disponible
+  (sin ARK_API_KEY) o RECHAZA la creación con 401/403. Un trabajo que ya recibió id en BytePlus NUNCA pasa a OpenRouter.
+- Imágenes: OpenAI (proveedor openai) y Seedream 5.5 (proveedor seedream) corren síncronas en un hilo.
 - Se consulta cada 5 s a los proveedores remotos (Seedance y Higgsfield).
 - MODO DEMO: si el proveedor no tiene llave, se simula (0→100 en ~6 s) con un PNG violeta.
 """
@@ -22,7 +25,7 @@ from pathlib import Path
 import requests
 
 from app import catalogo, config, db, prompts, referencias as _refs
-from app.proveedores import ErrorProveedor, higgsfield, openai_img, seedance
+from app.proveedores import ErrorProveedor, higgsfield, openai_img, openrouter, seedance, seedream
 
 INTERVALO_REMOTO = 5      # segundos entre consultas a cada tarea remota
 TIC = 1                   # el hilo despierta cada segundo (para el demo)
@@ -32,6 +35,7 @@ DURACION_DEMO = 6         # segundos que tarda un trabajo simulado
 LIMITE_VIDEO = 2 * 3600   # si pasa esto, se da por fallido
 LIMITE_HIGGSFIELD = 30 * 60
 MAX_REFERENCIAS = 9
+PROVEEDORES_IMAGEN = ("openai", "seedream")   # imágenes síncronas en un hilo
 ESTADOS = ("en_cola", "generando", "listo", "fallo", "cancelado")
 
 _candado = threading.RLock()
@@ -253,8 +257,10 @@ def _progreso(trabajo_id: str, valor: int) -> None:
 
 def es_demo(proveedor: str) -> tuple[bool, str | None]:
     """¿El proveedor está sin llave? Devuelve (demo, motivo)."""
-    if proveedor == "seedance" and not seedance.disponible():
+    if proveedor == "seedance" and not seedance.disponible() and not openrouter.disponible():
         return True, "Modo demo: falta ARK_API_KEY en el .env. Esto es una simulación."
+    if proveedor == "seedream" and not seedream.disponible():
+        return True, "Modo demo: falta ARK_API_KEY en el .env (Seedream usa la misma de Seedance). Esto es una simulación."
     if proveedor == "openai" and not openai_img.disponible():
         return True, "Modo demo: falta OPENAI_API_KEY en el .env. Esto es una simulación."
     if proveedor == "higgsfield" and not higgsfield.conectado():
@@ -262,9 +268,22 @@ def es_demo(proveedor: str) -> tuple[bool, str | None]:
     return False, None
 
 
+NOTA_PLAN_B = "Enviado por OpenRouter (plan B)"
+
+
+def via_inicial(proveedor: str) -> str | None:
+    """"openrouter" si el video irá por OpenRouter desde el principio (no hay llave de BytePlus)."""
+    if proveedor == "seedance" and not seedance.disponible() and openrouter.disponible():
+        return "openrouter"
+    return None
+
+
 def crear(spec: dict) -> list[dict]:
     """Crea un trabajo por variante y los deja en_cola. El hilo de fondo los arranca."""
     demo, nota = es_demo(spec["proveedor"])
+    via = None if demo else via_inicial(spec["proveedor"])
+    if via == "openrouter":
+        nota = f"{NOTA_PLAN_B}: no hay llave de BytePlus. Se cobra en OpenRouter."
     prompt_final = prompts.aplicar_presets(spec["prompt"], spec.get("estilo"), spec.get("camara"))
     variantes = spec["ajustes"].get("variantes", 1)
     creados = []
@@ -279,7 +298,7 @@ def crear(spec: dict) -> list[dict]:
             try:
                 costo = catalogo.costo(spec["tipo"], spec["modelo"], ajustes.get("resolucion"),
                                        ajustes.get("formato"), ajustes.get("duracion"), 1,
-                                       ajustes.get("calidad"))["usd"]
+                                       ajustes.get("calidad"), via)["usd"]
             except ValueError:
                 costo = None
         trabajo_id = "t_" + secrets.token_hex(6)
@@ -334,6 +353,7 @@ def borrar(trabajo_id: str) -> bool:
     if not fila:
         return False
     if (fila["proveedor"] == "seedance" and fila["tarea_remota"] and not fila["demo"]
+            and not fila["tarea_remota"].startswith(openrouter.PREFIJO)
             and fila["estado"] in ("en_cola", "generando")):
         try:
             seedance.cancelar(fila["tarea_remota"])
@@ -452,11 +472,11 @@ def medidas(video: Path) -> tuple[int, int] | None:
         return None
 
 
-def descargar(url: str, nombre: str) -> Path:
+def descargar(url: str, nombre: str, cabeceras: dict | None = None) -> Path:
     destino = config.cfg.MEDIOS / nombre
     temporal = destino.with_suffix(destino.suffix + ".part")
     config.cfg.MEDIOS.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=120) as r:
+    with requests.get(url, stream=True, timeout=120, headers=cabeceras) as r:
         r.raise_for_status()
         with open(temporal, "wb") as f:
             for trozo in r.iter_content(1024 * 256):
@@ -471,14 +491,14 @@ def _extension(url: str, defecto: str) -> str:
     return ext if ext in higgsfield.EXTENSIONES_MEDIO else defecto
 
 
-def _guardar_remoto(fila: dict, url: str, defecto: str) -> dict:
+def _guardar_remoto(fila: dict, url: str, defecto: str, cabeceras: dict | None = None) -> dict:
     """Descarga el medio remoto (dos intentos). Si falla, deja el enlace remoto."""
     ext = _extension(url, defecto)
     nombre = f"{fila['id']}.{ext}"
     ajustes = json.loads(fila["ajustes"] or "{}")
     for intento in range(2):
         try:
-            archivo = descargar(url, nombre)
+            archivo = descargar(url, nombre, cabeceras)
             break
         except (requests.RequestException, OSError):
             if intento == 1:
@@ -526,15 +546,21 @@ def _correr_imagen(trabajo_id: str) -> None:
         return
     ajustes = json.loads(fila["ajustes"] or "{}")
     entradas = json.loads(fila["entradas"] or "{}")
-    tamano = catalogo.TAMANOS_IMAGEN.get(ajustes.get("formato"), "1024x1024")
+    prompt = fila["prompt_final"] or fila["prompt"]
     try:
-        nombres = openai_img.generar(fila["prompt_final"] or fila["prompt"], ajustes.get("calidad") or "medium",
-                                     tamano, entradas.get("referencias") or [], n=1)
+        if fila["proveedor"] == "seedream":
+            ancho, alto = catalogo.tamano_seedream(ajustes.get("formato"), ajustes.get("resolucion"))
+            nombres = seedream.generar(prompt, ajustes.get("formato") or "1:1", ajustes.get("resolucion") or "2k",
+                                       entradas.get("referencias") or [])
+        else:
+            tamano = catalogo.TAMANOS_IMAGEN.get(ajustes.get("formato"), "1024x1024")
+            ancho, alto = (int(x) for x in tamano.split("x"))
+            nombres = openai_img.generar(prompt, ajustes.get("calidad") or "medium",
+                                         tamano, entradas.get("referencias") or [], n=1)
     except ErrorProveedor as e:
         _actualizar(trabajo_id, estado="fallo", error=e.mensaje, terminado=ahora_iso())
         return
     url = f"/medios/{nombres[0]}"
-    ancho, alto = (int(x) for x in tamano.split("x"))
     _actualizar(trabajo_id, estado="listo", progreso=100, terminado=ahora_iso(),
                 resultado={"url": url, "miniatura": url, "ancho": ancho, "alto": alto})
 
@@ -573,14 +599,46 @@ def _procesar_higgsfield(trabajo_id: str, salida: dict) -> None:
                     error="Higgsfield no devolvió el medio ni un id para seguirlo.")
 
 
+def _iniciar_openrouter(fila: dict, aviso: str) -> None:
+    """Crea el trabajo en OpenRouter. Se llama solo si BytePlus no creó nada (sin llave o rechazo 401/403)."""
+    ahora = time.time()
+    ajustes = json.loads(fila["ajustes"] or "{}")
+    try:
+        tarea = openrouter.crear(fila["modelo"], fila["prompt_final"] or fila["prompt"], ajustes,
+                                 json.loads(fila["entradas"] or "{}"))
+    except ErrorProveedor as e:
+        if e.reintentable:
+            _esperar_hasta[fila["id"]] = ahora + 20
+            _actualizar(fila["id"], nota=f"Esperando turno: {e.mensaje}")
+        else:
+            _actualizar(fila["id"], estado="fallo", error=e.mensaje, terminado=ahora_iso())
+        return
+    try:
+        costo = catalogo.costo("video", fila["modelo"], ajustes.get("resolucion"), ajustes.get("formato"),
+                               ajustes.get("duracion"), 1, None, "openrouter")["usd"]
+    except ValueError:
+        costo = fila["costo_usd"]
+    _actualizar(fila["id"], estado="generando", tarea_remota=openrouter.PREFIJO + tarea, iniciado=ahora_iso(),
+                progreso=5, nota=aviso, costo_usd=costo)
+    _ultimo_sondeo[fila["id"]] = ahora
+
+
 def _iniciar_seedance(fila: dict) -> None:
     ahora = time.time()
     if _esperar_hasta.get(fila["id"], 0) > ahora:
+        return
+    if via_inicial("seedance") == "openrouter":
+        _iniciar_openrouter(fila, f"{NOTA_PLAN_B}: no hay llave de BytePlus. Se cobra en OpenRouter.")
         return
     try:
         tarea = seedance.crear(fila["modelo"], fila["prompt_final"] or fila["prompt"],
                                json.loads(fila["ajustes"] or "{}"), json.loads(fila["entradas"] or "{}"))
     except ErrorProveedor as e:
+        # Cuenta sin permiso (401/403): BytePlus rechazó la creación, no cobró nada. Solo ahí va el plan B.
+        if e.codigo in (401, 403) and openrouter.disponible():
+            _iniciar_openrouter(fila, f"{NOTA_PLAN_B}: BytePlus respondió {e.codigo} ({e.mensaje.rstrip('.')}). "
+                                      "Se cobra en OpenRouter.")
+            return
         if e.reintentable:
             _esperar_hasta[fila["id"]] = ahora + 20
             _actualizar(fila["id"], nota=f"Esperando turno: {e.mensaje}")
@@ -593,8 +651,10 @@ def _iniciar_seedance(fila: dict) -> None:
 
 
 def _consultar_seedance(fila: dict) -> None:
+    por_or = fila["tarea_remota"].startswith(openrouter.PREFIJO)
     try:
-        info = seedance.consultar(fila["tarea_remota"])
+        info = (openrouter.consultar(fila["tarea_remota"][len(openrouter.PREFIJO):]) if por_or
+                else seedance.consultar(fila["tarea_remota"]))
     except ErrorProveedor as e:
         if not e.reintentable:
             _actualizar(fila["id"], estado="fallo", error=e.mensaje, terminado=ahora_iso())
@@ -613,10 +673,14 @@ def _consultar_seedance(fila: dict) -> None:
                         terminado=ahora_iso())
             return
         ajustes = json.loads(fila["ajustes"] or "{}")
-        costo = catalogo.costo_real_seedance(fila["modelo"], ajustes.get("resolucion", "720p"), info.get("tokens"))
+        if por_or:
+            costo = info.get("costo")   # usage.cost real de OpenRouter, en US$
+        else:
+            costo = catalogo.costo_real_seedance(fila["modelo"], ajustes.get("resolucion", "720p"), info.get("tokens"))
 
         def terminar():
-            guardado = _guardar_remoto(fila, info["video_url"], "mp4")
+            guardado = _guardar_remoto(fila, info["video_url"], "mp4",
+                                       openrouter.cabeceras_descarga() if info.get("con_llave") else None)
             campos = dict(estado="listo", progreso=100, terminado=ahora_iso(), **guardado)
             if costo is not None:
                 campos["costo_usd"] = costo
@@ -661,7 +725,7 @@ def tic() -> None:
 
     seedance_activos = sum(1 for f in activos if f["proveedor"] == "seedance" and not f["demo"]
                            and f["estado"] == "generando")
-    imagenes_activas = sum(1 for f in activos if f["proveedor"] == "openai" and f["id"] in ocupados)
+    imagenes_activas = sum(1 for f in activos if f["proveedor"] in PROVEEDORES_IMAGEN and f["id"] in ocupados)
 
     for fila in activos:
         tid = fila["id"]
@@ -688,7 +752,7 @@ def tic() -> None:
                 _ultimo_sondeo[tid] = ahora
                 _consultar_seedance(fila)
 
-        elif fila["proveedor"] == "openai":
+        elif fila["proveedor"] in PROVEEDORES_IMAGEN:
             if fila["estado"] == "en_cola" and imagenes_activas < MAX_IMAGEN:
                 _actualizar(tid, estado="generando", iniciado=ahora_iso(), progreso=3)
                 _hilo(tid, lambda t=tid: _correr_imagen(t))
@@ -712,7 +776,7 @@ def tic() -> None:
 
     # progreso estimado de imágenes en curso
     for fila in activos:
-        if fila["proveedor"] == "openai" and fila["id"] in ocupados and not fila["demo"]:
+        if fila["proveedor"] in PROVEEDORES_IMAGEN and fila["id"] in ocupados and not fila["demo"]:
             progreso = int(min(95, max(3, _segundos_desde(fila["iniciado"]) / 45 * 100)))
             _progreso(fila["id"], progreso)
 

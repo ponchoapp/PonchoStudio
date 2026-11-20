@@ -5,7 +5,9 @@ import { el, icono, modal, toast } from "./ui.js";
 
 const CAMPOS = [
   { nombre: "ARK_API_KEY", etiqueta: "Llave de BytePlus", ayuda: "Seedance y Seedream", tipo: "secreto", placeholder: "Pega aquí la API key de ModelArk" },
+  { nombre: "OPENROUTER_API_KEY", etiqueta: "Llave de OpenRouter", ayuda: "Plan B de Seedance", tipo: "secreto", placeholder: "sk-or-…" },
   { nombre: "OPENAI_API_KEY", etiqueta: "Llave de OpenAI", ayuda: "Imágenes y mejorar prompts", tipo: "secreto", placeholder: "sk-…" },
+  { nombre: "SEEDREAM_MODEL", etiqueta: "Model ID de Seedream", ayuda: "Solo si BytePlus lo cambia", tipo: "texto", entrada: "text", placeholder: "dola-seedream-5-5-261028" },
   { nombre: "OLLAMA_URL", etiqueta: "Dirección de Ollama", ayuda: "Opcional", tipo: "texto", placeholder: "http://localhost:11434" },
   { nombre: "OLLAMA_MODELO", etiqueta: "Modelo de Ollama", ayuda: "Opcional", tipo: "modelo" },
 ];
@@ -41,7 +43,7 @@ function campoSecreto(c, info) {
 
 function campoTexto(c, info) {
   const id = "llave-" + c.nombre;
-  const input = el("input", { class: "entrada", id, type: "url", name: c.nombre, placeholder: c.placeholder, autocomplete: "off", spellcheck: false });
+  const input = el("input", { class: "entrada", id, type: c.entrada || "url", name: c.nombre, placeholder: c.placeholder, autocomplete: "off", spellcheck: false });
   const nodo = el("div", { class: "campo" },
     el("label", { for: id }, el("span", {}, c.etiqueta, el("small", { class: "llave-ayuda" }, ` · ${c.ayuda}`)), estadoGuardado(info)),
     input);

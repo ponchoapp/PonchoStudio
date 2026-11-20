@@ -59,7 +59,7 @@ export async function montar(raiz, ctx) {
       return;
     }
     const p = salud.proveedores || {};
-    const sd = p.seedance || {}, oa = p.openai || {}, ol = p.ollama || {}, hf = p.higgsfield || {};
+    const sd = p.seedance || {}, sr = p.seedream || {}, orr = p.openrouter || {}, oa = p.openai || {}, ol = p.ollama || {}, hf = p.higgsfield || {};
     const conectado = !!((hfEstado && hfEstado.conectado) || hf.conectado);
     const final = (n) => (llaves && llaves[n] && llaves[n].guardada && llaves[n].final ? `Guardada · termina en …${llaves[n].final}` : null);
     const modeloElegido = (llaves && llaves.OLLAMA_MODELO && llaves.OLLAMA_MODELO.valor) || "";
@@ -102,6 +102,20 @@ export async function montar(raiz, ctx) {
         cuerpo: [el("p", { class: "nota" }, sd.listo ? (final("ARK_API_KEY") || "Llave ARK_API_KEY encontrada.") : (sd.motivo || "Falta ARK_API_KEY en .env."))],
       }),
       tarjeta({
+        sigla: "SR", nombre: "Seedream 5.5 (BytePlus)", sub: "Imágenes directas, con fondo transparente", estado: luz(sr.listo),
+        cuerpo: [
+          el("p", { class: "nota" }, sr.listo ? "Usa la misma llave de Seedance." : (sr.motivo || "Falta ARK_API_KEY en .env.")),
+          sr.modelo ? el("p", { class: "nota" }, "Model ID: ", el("code", { title: sr.modelo }, sr.modelo)) : el("p", { class: "nota" }, "Falta el Model ID: pégalo en «Pegar mis llaves»."),
+        ],
+      }),
+      tarjeta({
+        sigla: "OR", nombre: "OpenRouter", sub: "Plan B del video si Seedance directo falla", estado: luz(orr.listo, "Listo", "Opcional"),
+        cuerpo: [
+          el("p", { class: "nota" }, orr.listo ? (final("OPENROUTER_API_KEY") || "Llave OPENROUTER_API_KEY encontrada.") : "Sin llave. No hace falta: solo entra si BytePlus no deja generar."),
+          el("p", { class: "nota" }, "Se usa solo si falta la llave de BytePlus o la cuenta no tiene permiso. Cobra a su propio saldo y lo avisa en el trabajo."),
+        ],
+      }),
+      tarjeta({
         sigla: "OA", nombre: "OpenAI", sub: "Imágenes gpt-image-2 y mejorar prompts", estado: luz(oa.listo),
         cuerpo: [el("p", { class: "nota" }, oa.listo ? (final("OPENAI_API_KEY") || "Llave OPENAI_API_KEY encontrada.") : (oa.motivo || "Falta OPENAI_API_KEY en .env."))],
       }),
@@ -134,9 +148,11 @@ function guia() {
       el("p", { class: "sec-sub" }, "Lo más fácil es «Pegar mis llaves»: solo se muestran los últimos 4 caracteres.")),
     el("ol", {},
       el("li", {}, el("b", {}, "Seedance: "), "entra a la consola de BytePlus ModelArk, activa Seedance 2.5 y crea una API key."),
+      el("li", {}, el("b", {}, "Seedream: "), "usa la misma llave de BytePlus. Activa Seedream 5.5 en la consola de ModelArk."),
+      el("li", {}, el("b", {}, "OpenRouter (opcional): "), "en openrouter.ai → Keys. Es el plan B si Seedance directo falla."),
       el("li", {}, el("b", {}, "OpenAI: "), "en platform.openai.com → API keys. Es aparte de la suscripción de ChatGPT."),
       el("li", {}, el("b", {}, "Ollama: "), "no lleva llave. Solo ábrelo en este equipo."),
       el("li", {}, el("b", {}, "Higgsfield: "), "no lleva llave. Toca «Conectar Higgsfield» e inicia sesión.")),
     el("p", { class: "nota" }, "A mano: copia ", el("code", {}, "env.ejemplo"), " como ", el("code", {}, ".env"), " en la carpeta de PonchoStudio, escribe las llaves y reinicia la app."),
-    el("pre", { class: "codigo" }, "ARK_API_KEY=tu-llave-de-byteplus\nOPENAI_API_KEY=tu-llave-de-openai"));
+    el("pre", { class: "codigo" }, "ARK_API_KEY=tu-llave-de-byteplus\nOPENROUTER_API_KEY=tu-llave-de-openrouter\nOPENAI_API_KEY=tu-llave-de-openai"));
 }

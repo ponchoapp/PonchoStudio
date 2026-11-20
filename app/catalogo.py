@@ -46,6 +46,7 @@ VIDEO = [
         "descripcion": 'Video con audio hasta 30 s, de 480p a 1080p', "nuevo": False, "destacado": True,
         "nota": "API oficial de BytePlus ModelArk. Con foto de entrada el formato sale de la foto.",
         "_api_id": "dreamina-seedance-2-5-260628",
+        "_openrouter_id": "bytedance/seedance-2.5", "_tarifa_openrouter": 0.1028,  # US$/s "desde" (openrouter.ai, 19 nov 2026)
         "_tarifa": {"480p": 10.7, "720p": 10.7, "1080p": 11.7},
         "_pixeles": PIXELES,
         "_ratio_adaptativo": True,
@@ -62,6 +63,7 @@ VIDEO = [
         "descripcion": 'Casi la calidad de 2.5, más rápido y barato', "nuevo": True, "destacado": True,
         "nota": "Casi la calidad de 2.5, el doble de rápido y un 35 % más barato. Ideal para probar.",
         "_api_id": "dreamina-seedance-2-5-flash-261115",
+        "_openrouter_id": "bytedance/seedance-2.5-flash", "_tarifa_openrouter": 0.06726,  # US$/s "desde" (openrouter.ai, 19 nov 2026)
         "_tarifa": {"480p": 7.0, "720p": 7.0},
         "_pixeles": PIXELES,
         "_ratio_adaptativo": True,
@@ -76,6 +78,7 @@ VIDEO = [
         "descripcion": 'Generación anterior, hasta 15 s', "nuevo": False, "destacado": False,
         "nota": "Generación anterior. Hasta 15 s.",
         "_api_id": "dreamina-seedance-2-0-260128",
+        "_openrouter_id": "bytedance/seedance-2.0", "_tarifa_openrouter": 0.06726,  # US$/s "desde" (openrouter.ai, 19 nov 2026)
         "_tarifa": {"480p": 7.0, "720p": 7.0, "1080p": 7.7},
         "_pixeles": PIXELES_20,
         "_ratio_adaptativo": False,
@@ -90,6 +93,7 @@ VIDEO = [
         "descripcion": 'El más barato y rápido, máximo 720p', "nuevo": False, "destacado": False,
         "nota": "El más barato y rápido. Máximo 720p.",
         "_api_id": "dreamina-seedance-2-0-fast-260128",
+        "_openrouter_id": "bytedance/seedance-2.0-fast", "_tarifa_openrouter": 0.0538,  # US$/s "desde" (openrouter.ai, 19 nov 2026)
         "_tarifa": {"480p": 5.6, "720p": 5.6},
         "_pixeles": PIXELES_20,
         "_ratio_adaptativo": False,
@@ -99,6 +103,32 @@ VIDEO = [
 TAMANOS_IMAGEN = {"1:1": "1024x1024", "2:3": "1024x1536", "3:2": "1536x1024"}
 PRECIO_IMAGEN = {"low": 0.011, "medium": 0.042, "high": 0.167}  # estimado por imagen cuadrada (1024x1024)
 PRECIO_IMAGEN_RECTANGULAR = {"low": 0.016, "medium": 0.063, "high": 0.25}  # 1024x1536 y 1536x1024
+
+
+# Seedream 5.5 (BytePlus ModelArk, dola-seedream-5-5-261028). Precio oficial por imagen de salida según píxeles
+# (docs.byteplus.com/en/docs/ModelArk/1544106, 19 nov 2026): 921.600-2.601.123 px: US$0,020; hasta 4.624.220 px: US$0,035.
+FORMATOS_SEEDREAM = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9"]
+PIXELES_SEEDREAM = {"1k": 1024 * 1024, "2k": 2048 * 2048}
+LIMITE_PRECIO_BAJO = 2_601_123   # 1536² × 1.05²
+PRECIO_SEEDREAM = {"bajo": 0.020, "alto": 0.035}
+
+
+def tamano_seedream(formato: str | None, resolucion: str | None) -> tuple[int, int]:
+    """Ancho x alto (múltiplos de 16) para el formato y el nivel 1k/2k. Siempre dentro de 921.600-4.624.220 px
+    y de relación [1/16, 16], que es lo que acepta la API."""
+    try:
+        w, h = (float(x) for x in (formato or "1:1").split(":"))
+    except ValueError:
+        w, h = 1.0, 1.0
+    objetivo = PIXELES_SEEDREAM.get((resolucion or "2k").lower(), PIXELES_SEEDREAM["2k"])
+    ancho = max(16, round((objetivo * w / h) ** 0.5 / 16) * 16)
+    alto = max(16, round(objetivo / ancho / 16) * 16)
+    return int(ancho), int(alto)
+
+
+def precio_seedream(formato: str | None, resolucion: str | None) -> float:
+    ancho, alto = tamano_seedream(formato, resolucion)
+    return PRECIO_SEEDREAM["bajo"] if ancho * alto <= LIMITE_PRECIO_BAJO else PRECIO_SEEDREAM["alto"]
 
 
 def precio_imagen(calidad: str, formato: str | None = None) -> float:
@@ -116,6 +146,17 @@ IMAGEN = [
         "gasta_creditos_higgsfield": False,
         "descripcion": 'Imágenes y ediciones con referencias', "nuevo": False, "destacado": True,
         "nota": "Precio estimado por imagen. Sin fondo transparente: pide fondo blanco liso.",
+    },
+    {
+        # Model ID, precio y parámetros de la doc oficial de BytePlus (19 nov 2026). Misma ARK_API_KEY que Seedance.
+        "id": "seedream-5.5", "nombre": "Seedream 5.5", "proveedor": "seedream",
+        "etiqueta": "Directo · barato",
+        "calidades": [], "resoluciones": ["1k", "2k"], "formatos": FORMATOS_SEEDREAM,
+        "variantes_max": 4, "entradas": ["texto", "referencias"],
+        "gasta_creditos_higgsfield": False,
+        "descripcion": "Edición precisa y fondo transparente real", "nuevo": True, "destacado": True,
+        "nota": "Directo por BytePlus: unos US$0,02 la imagen a 1k y US$0,035 a 2k. Admite hasta 10 referencias "
+                "y fondo transparente (pídelo en el prompt, sale en PNG).",
     },
 ]
 
@@ -224,7 +265,8 @@ def tokens_video(ancho: int, alto: int, segundos: float) -> float:
 
 
 def costo(tipo: str, modelo_id: str, resolucion: str | None = None, formato: str | None = None,
-          duracion: float | None = None, variantes: int = 1, calidad: str | None = None) -> dict:
+          duracion: float | None = None, variantes: int = 1, calidad: str | None = None,
+          via: str | None = None) -> dict:
     """Costo estimado. Devuelve {"usd", "detalle"} o {"usd": None, "creditos", "detalle"}."""
     modelo = buscar(modelo_id, tipo)
     if modelo is None:
@@ -233,6 +275,15 @@ def costo(tipo: str, modelo_id: str, resolucion: str | None = None, formato: str
     if modelo.get("gasta_creditos_higgsfield"):
         return {"usd": None, "creditos": None,
                 "detalle": "Higgsfield cobra en créditos. El costo exacto aún no se conoce."}
+    if tipo == "video" and via == "openrouter":
+        if not modelo.get("_tarifa_openrouter"):
+            raise ValueError(f"{modelo['nombre']} no está en OpenRouter.")
+        segundos = float(duracion or modelo["duracion"]["min"])
+        usd = modelo["_tarifa_openrouter"] * segundos * variantes
+        return {"usd": round(usd, 4),
+                "detalle": f"aproximado por OpenRouter: desde US${modelo['_tarifa_openrouter']}/s × {segundos:g} s"
+                           + (f" × {variantes} variantes" if variantes > 1 else "")
+                           + ". El costo real lo informa OpenRouter al terminar."}
     if tipo == "video":
         resolucion = resolucion or "720p"
         formato = formato or "16:9"
@@ -248,6 +299,13 @@ def costo(tipo: str, modelo_id: str, resolucion: str | None = None, formato: str
         detalle = (f"tokens {tokens:,.0f} × US${tarifa}/millón ({px[0]}x{px[1]}, {segundos:g} s)"
                    + (f" × {variantes} variantes" if variantes > 1 else ""))
         return {"usd": round(usd, 4), "detalle": detalle}
+    if tipo == "imagen" and modelo["proveedor"] == "seedream":
+        resolucion = (resolucion or "2k").lower()
+        ancho, alto = tamano_seedream(formato, resolucion)
+        precio = precio_seedream(formato, resolucion)
+        return {"usd": round(precio * variantes, 4),
+                "detalle": f"US${precio} por imagen ({ancho}x{alto}, tarifa oficial de BytePlus) × {variantes}. "
+                           "Si le pasas referencias, BytePlus podría sumar un cargo pequeño por imagen de entrada."}
     if tipo == "imagen":
         calidad = calidad or "medium"
         if calidad not in PRECIO_IMAGEN:

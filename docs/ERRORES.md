@@ -96,3 +96,9 @@ color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminad
 - **Rutas de Windows en heredocs:** las `\` se pierden. En scripts de prueba usar `/`.
 - **Copia de prueba con el token de Higgsfield:** `/api/salud` dice `demo:false` aunque Seedance/OpenAI no tengan llave.
   Antes de generar en una copia, revisar que el proveedor del modelo NO esté listo (`proveedores.<x>.listo == false`).
+
+## 19 nov 2026 · Documentación de BytePlus que parece vacía
+**Qué pasó:** `WebFetch` a docs.byteplus.com devolvía solo el menú (es una SPA) y el Model ID de Seedream 5.5 parecía "no
+encontrable". Además, en el tool de Bash los heredocs con `\` o apóstrofes rompían scripts de Python.
+**Regla:** para leer esa doc, bajar el HTML con `curl -A "Mozilla/5.0"` y extraer el texto del JSON embebido. Y los scripts
+largos se escriben con el Write tool (a un archivo) y no con heredoc. Un Model ID solo se da por bueno si está en la doc oficial.

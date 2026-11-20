@@ -47,3 +47,11 @@ def test_rechaza(env_temporal, datos):
     with pytest.raises(ValueError):
         config.guardar_llaves(datos)
     assert "INYECTADA" not in env_temporal.read_text(encoding="utf-8")
+
+
+def test_openrouter_y_seedream(env_temporal):
+    config.guardar_llaves({"OPENROUTER_API_KEY": "sk-or-v1-abcdef123456", "SEEDREAM_MODEL": "dola-seedream-5-5-261028"})
+    estado = config.estado_llaves()
+    assert estado["OPENROUTER_API_KEY"] == {"guardada": True, "final": "3456"}
+    assert "abcdef" not in str(estado) and "abcdef" not in repr(config.cfg)
+    assert estado["SEEDREAM_MODEL"]["valor"] == "dola-seedream-5-5-261028"
