@@ -102,3 +102,11 @@ color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminad
 encontrable". Además, en el tool de Bash los heredocs con `\` o apóstrofes rompían scripts de Python.
 **Regla:** para leer esa doc, bajar el HTML con `curl -A "Mozilla/5.0"` y extraer el texto del JSON embebido. Y los scripts
 largos se escriben con el Write tool (a un archivo) y no con heredoc. Un Model ID solo se da por bueno si está en la doc oficial.
+
+## 19 nov 2026 · Lecciones de la v0.3.0
+- **docs.byteplus.com es una SPA:** WebFetch solo trae el menú. Bajar el HTML con `curl -A "Mozilla/5.0"` y leer el JSON
+  embebido.
+- **`/tmp` de Git Bash no es el de Windows:** a scripts de Python pasar rutas `C:/...` explícitas.
+- **Pruebas automáticas con Higgsfield como segundo modelo:** sale el modal de créditos; el script debe contemplarlo o se
+  cuelga.
+- **Versión escrita a mano en una prueba:** `test_salud` comparaba con "0.1.0". Ahora compara con `app.VERSION`.

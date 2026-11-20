@@ -2,7 +2,7 @@
 
 Archivo que resume TODA la conversación y las decisiones. Se actualiza en cada avance.
 Si la conversación se compacta o se empieza una nueva sesión, leer esto primero.
-Última actualización: 19 nov 2026, 22:40 (hora Colombia).
+Última actualización: 19 nov 2026, 23:30 (hora Colombia).
 
 ## 1. Qué pidió Poncho (sus palabras, resumidas)
 - Una app nueva para crear videos e imágenes **con interfaz como Higgsfield** (inicio/explorar, imagen, video,
@@ -278,8 +278,18 @@ Usar las skills de diseño que instaló (frontend-design, impeccable, ui-ux-pro-
   - Una prueba falló 1 vez de 10 corridas y no se repitió (sin identificar). Vigilar.
   - Reglas viejas del generador en `estilos.css` (.barra-prompt, .sel-modelo, .btn-hoja, .pop-arriba) ya sin uso.
   - Presets de "Producto y marketing" no traen descripción: Recrear carga solo el nombre como prompt.
-- Siguiente: **v0.3.0** = Seedream 5.5 (imagen con ARK_API_KEY; falta el Model ID exacto), OpenRouter como plan B de
-  Seedance (necesita OPENROUTER_API_KEY) y botón "Comparar".
+- Siguiente: v0.3.0 (hecha, ver 5h).
+
+## 5h. v0.3.0 cerrada (19 nov, 23:30)
+- Hecho con 2 agentes y subido (tag `v0.3.0`): Seedream 5.5 directo, OpenRouter como plan B de Seedance y "Comparar".
+  Datos verificados en la doc oficial: ver sección 2 (Seedream 5.5 y OpenRouter, con URL y fecha).
+- Probado en una copia sin llaves: Comparar GPT Image 2 vs Seedream 5.5 (A US$0,04 + B US$0,04 = US$0,08), dos trabajos
+  demo y la pareja guardada. 118 pruebas pasan.
+- Para usar: Seedream ya funciona con la ARK_API_KEY (cuando BytePlus active Dola-Seedream-5.5 en la consola).
+  OpenRouter necesita que Poncho pegue `OPENROUTER_API_KEY` en "Pegar mis llaves".
+- Pendientes que gastan (pedir permiso con el costo): prueba real Seedance con video de referencia (~US$0,10), una imagen
+  Seedream real (~US$0,02), rehacer 5 miniaturas (~US$0,011 c/u). Comparar con Higgsfield gasta créditos: probar con permiso.
+- Comparar: si una pareja sale de las últimas 40 tareas del feed se ve como dos tarjetas sueltas.
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).

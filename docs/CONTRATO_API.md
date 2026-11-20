@@ -1,4 +1,4 @@
-# Contrato API de PonchoStudio (v0.2)
+# Contrato API de PonchoStudio (v0.3)
 
 El backend (Starlette) y el frontend (JS sin framework) se hablan solo por estas rutas. Todo JSON, UTF-8.
 Errores: código HTTP 4xx/5xx con `{"error": "frase corta en español"}`.
@@ -7,7 +7,7 @@ Errores: código HTTP 4xx/5xx con `{"error": "frase corta en español"}`.
 ```
 PonchoStudio/
   app/                      backend Python 3.12
-    __init__.py             VERSION = "0.2.0"
+    __init__.py             VERSION = "0.3.0"
     main.py                 Starlette: rutas, estáticos, arranque
     config.py               lee .env (sin librerías extra)
     db.py                   SQLite en data/studio.db

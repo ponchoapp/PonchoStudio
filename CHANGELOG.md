@@ -9,6 +9,23 @@ Cada versión lleva su etiqueta de git (`v0.1.0`). Sube `VERSION` en `app/__init
 
 ## [Sin publicar]
 
+## [0.3.0] · 2026-11-19
+### Agregado
+- **Seedream 5.5** como motor de imagen directo con la misma llave de BytePlus (`dola-seedream-5-5-261028`, verificado
+  en la doc oficial): US$0,020 por imagen hasta ~2,6 MP y US$0,035 hasta ~4,6 MP, fondo transparente nativo, hasta 10
+  referencias. Configurable con `SEEDREAM_MODEL`.
+- **OpenRouter como plan B de Seedance** (`OPENROUTER_API_KEY`): solo entra si no hay llave de BytePlus o si BytePlus
+  rechaza la creación con 401/403 (no creó tarea: nunca hay doble gasto). El trabajo dice "Enviado por OpenRouter
+  (plan B)" y guarda el costo real (`usage.cost`).
+- **Botón "Comparar"**: el mismo prompt a dos modelos. Antes de mandar muestra el costo de cada uno y el total; los ajustes
+  se adaptan al catálogo del segundo (y lo avisa). Los resultados se ven lado a lado y la pareja se guarda.
+- Ajustes y "Pegar mis llaves" con Seedream y OpenRouter.
+
+### Sin confirmar (requiere una prueba real con permiso de Poncho)
+- Cargo de Seedream por imagen de entrada (la doc sugiere ~US$0,008).
+- Precio exacto de OpenRouter por resolución (la doc da "desde" por segundo).
+- Roles `reference_video` / `reference_audio` de Seedance con video de referencia.
+
 ## [0.2.0] · 2026-11-19
 Rediseño completo con la organización de higgsfield.ai (sin copiar su marca), referencias que no se pierden y Explorar
 conectado de verdad a Higgsfield.
