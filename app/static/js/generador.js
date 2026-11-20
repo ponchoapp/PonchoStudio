@@ -159,6 +159,21 @@ export function menuPresets({ etiqueta, iconoNombre, lista, valor, onCambio }) {
   return ancla;
 }
 
+/* ---------- Menú de plantillas locales en la barra ---------- */
+export function menuPlantillas({ lista, onElegir }) {
+  const boton = el("button", { class: "chip", type: "button", "aria-label": "Elegir una plantilla de prompt" }, icono("libro"), "Plantillas");
+  const ancla = el("div", { class: "pop-ancla" }, boton);
+  if (!lista.length) ancla.hidden = true;
+  popover(boton, (cerrar) => [
+    el("div", { class: "pop-titulo" }, "Plantillas"),
+    el("ul", { class: "lista-plantillas" }, lista.map((p) => el("li", {},
+      el("button", { class: "fila-plantilla", type: "button", onclick: () => { onElegir(p); cerrar(); } },
+        p.miniatura ? el("img", { class: "fila-plantilla-mini", src: p.miniatura, alt: "", loading: "lazy" }) : null,
+        el("span", { class: "fila-plantilla-txt" }, el("strong", {}, p.nombre), el("small", {}, p.prompt)))))),
+  ], { lado: "arriba", etiqueta: "Plantillas" });
+  return ancla;
+}
+
 /* ---------- Botón Generar con costo en vivo ---------- */
 export function botonGenerar({ tipo, cuerpoCosto, textoBase, onGenerar }) {
   const btn = el("button", { class: "btn btn-primario btn-generar", type: "button" });

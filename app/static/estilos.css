@@ -331,6 +331,29 @@ select.entrada { appearance: none; padding-right: 34px;
 .vacio strong { color: var(--texto); font-size: 14px; }
 
 /* ---------- Explorar ---------- */
+.pagina-explorar { gap: 14px; padding-top: 12px; }
+.franja-aviso {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--fondo); box-shadow: inset 0 0 0 1px var(--linea);
+  color: var(--suave); font-size: 13px;
+}
+.franja-progreso { flex: 1 1 160px; max-width: 320px; }
+.franja-progreso .progreso { height: 4px; }
+.insignia .icono { width: 12px; height: 12px; }
+.lista-plantillas { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+@media (min-width: 900px) { .seccion > .lista-plantillas { grid-template-columns: repeat(2, 1fr); gap: 4px 12px; } }
+.fila-plantilla {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  min-height: 52px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--texto); text-align: left; cursor: pointer;
+}
+.pop .fila-plantilla { grid-template-columns: auto minmax(0, 1fr); }
+.fila-plantilla:hover, .fila-plantilla:focus-visible { background: rgba(255, 255, 255, .05); }
+.fila-plantilla-txt { min-width: 0; }
+.fila-plantilla-txt strong { display: block; font-size: 13px; }
+.fila-plantilla-txt small { display: block; color: var(--tenue); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fila-plantilla-usar { font-size: 12px; font-weight: 700; color: var(--suave); }
+.fila-plantilla-mini { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+
 .carrusel { display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: var(--gap); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 0 var(--gutter); }
 .carrusel::-webkit-scrollbar { display: none; }
 @media (min-width: 700px) { .carrusel { grid-auto-columns: 44%; } }

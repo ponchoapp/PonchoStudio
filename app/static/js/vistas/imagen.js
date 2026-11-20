@@ -1,7 +1,7 @@
 // Generador de imagen: OpenAI gpt-image-2 por defecto.
 import { api } from "../api.js";
 import { el, limpiar, toast, segmentado, dropzone, formaIcono, insigniaCreditos } from "../ui.js";
-import { selectorModelo, crearPrompt, menuPresets, botonGenerar, enviarGeneracion, feedTrabajos, aplicarPrecarga, montarGenerador } from "../generador.js";
+import { selectorModelo, crearPrompt, menuPresets, menuPlantillas, botonGenerar, enviarGeneracion, feedTrabajos, aplicarPrecarga, montarGenerador } from "../generador.js";
 
 const MODELO_DEFECTO = "gpt-image-2";
 const CALIDADES = { low: "Baja", medium: "Media", high: "Alta" };
@@ -68,6 +68,10 @@ export async function montar(raiz, ctx) {
     onCambio: (v) => { st.prompt = v; },
   });
   const menus = [menuPresets({ etiqueta: "Estilo", iconoNombre: "pincel", lista: presets.estilos || [], valor: st.estilo, onCambio: (p) => { st.estilo = p ? p.id : null; } })];
+  menus.push(menuPlantillas({
+    lista: (presets.plantillas || []).filter((p) => (p.categoria === "imagen" ? "imagen" : "video") === "imagen"),
+    onElegir: (p) => { st.prompt = p.prompt; prompt.fijar(p.prompt); prompt.area.focus(); },
+  }));
   const feed = feedTrabajos({ tipo: "imagen", demo, irA: ctx.irA, vacio: { titulo: "Aún no hay imágenes", texto: "Escribe un prompt abajo y toca Generar. Aquí aparecen las imágenes." } });
   const generar = botonGenerar({
     tipo: "imagen",

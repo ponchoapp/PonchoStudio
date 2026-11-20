@@ -56,7 +56,11 @@ HERRAMIENTAS = [
     {"name": "models_get", "description": "Model parameters",
      "inputSchema": {"type": "object", "properties": {"model_id": {"type": "string"}}, "required": ["model_id"]}},
     {"name": "show_generations", "description": "Browse existing results",
-     "inputSchema": {"type": "object", "properties": {"limit": {"type": "integer", "maximum": 20}}}},
+     "inputSchema": {"type": "object", "properties": {
+         "limit": {"type": "integer", "maximum": 20}, "cursor": {"type": "string"},
+         "type": {"type": "string", "enum": ["video", "image"]}}}},
+    {"name": "execute_preset", "description": "Run a preset (spends credits). Lists nothing.",
+     "inputSchema": {"type": "object", "properties": {"preset_id": {"type": "string"}}}},
     {"name": "search_presets", "description": "Search presets",
      "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
     {"name": "generate_video", "description": "Generate a video with any Higgsfield video model",
@@ -72,6 +76,10 @@ HERRAMIENTAS = [
      "inputSchema": {"type": "object", "properties": {
          "model": {"type": "string"}, "prompt": {"type": "string"}, "aspect_ratio": {"type": "string"},
          "resolution": {"type": "string"}}, "required": ["model", "prompt"]}},
+    {"name": "get_presets", "description": "Browse Higgsfield presets with previews",
+     "inputSchema": {"type": "object", "properties": {
+         "source": {"type": "string", "enum": ["trending", "featured"]},
+         "cursor": {"type": "string"}, "limit": {"type": "integer", "maximum": 30}}}},
 ]
 
 
@@ -105,6 +113,7 @@ class EstadoMCP:
         self.rechazar_token = None  # token que de pronto deja de servir
         self.vencer_sesion = False
         self.contador = 0
+        self.presets_fallan = False
 
 
 ESTADO = EstadoMCP()
@@ -237,14 +246,44 @@ class ManejadorMCP(Base):
             return texto({"models": [{"id": "kling4_0", "type": "video"}, {"id": "soul_2", "type": "image"}]})
         if nombre == "show_generations":
             # Igual que el real: sin prompts, solo id, job_set_type, url y fecha
-            return texto({"generations": [
+            if args.get("cursor") == "g2":
+                return texto({"generations": [
+                    {"id": "g5", "job_set_type": "kling4_0", "url": e.base + "/media/e.mp4",
+                     "created_at": "2026-10-01"}]})
+            items = [
                 {"id": "g1", "job_set_type": "seedance_2_5", "url": e.base + "/media/a.mp4",
-                 "created_at": "2026-11-01"},
+                 "thumbnail_url": e.base + "/media/a.jpg", "created_at": "2026-11-01"},
                 {"id": "g2", "job_set_type": "seedance_2_5", "url": e.base + "/media/b.mp4",
                  "created_at": "2026-11-02"},
                 {"id": "g3", "job_set_type": "kling3_0", "url": e.base + "/media/c.mp4",
                  "created_at": "2026-11-03"},
-            ]})
+                {"id": "g4", "job_set_type": "nano_banana_pro", "results": [{"url": e.base + "/media/d.png"}],
+                 "created_at": "2026-11-04"},
+            ]
+            if args.get("type") == "image":
+                items = [i for i in items if i["id"] == "g4"]
+            elif args.get("type") == "video":
+                items = [i for i in items if i["id"] != "g4"]
+            return texto({"generations": items, "next_cursor": "g2"})
+        if nombre == "get_presets":
+            if e.presets_fallan:
+                return {"isError": True, "content": [{"type": "text", "text": "caído"}]}
+            fuente = args.get("source")
+            if fuente == "featured":
+                return texto({"presets": [
+                    {"id": "p1", "name": "Crash Zoom", "preview_url": e.base + "/media/p1.mp4", "type": "video"},
+                    {"id": "p4", "title": "Sin prompt", "thumbnail_url": e.base + "/media/p4.jpg"}]})
+            if args.get("cursor") == "c2":
+                return texto({"presets": [
+                    {"id": "p3", "name": "Dolly Seedance", "preview_url": e.base + "/media/p3.mp4",
+                     "model": "seedance_2_5", "aspect_ratio": "9:16",
+                     "prompt": "A dancer spins under neon rain, slow dolly in"}]})
+            return texto({"presets": [
+                {"id": "p1", "name": "Crash Zoom", "preview_url": e.base + "/media/p1.mp4", "type": "video",
+                 "prompt": "Crash zoom into the eyes of a boxer, sweat flying", "model": "kling3_0"},
+                {"id": "p2", "name": "Retrato neón", "preview_url": e.base + "/media/p2.webp",
+                 "model": "nano_banana_pro", "category": "retratos"}],
+                "next_cursor": "c2"})
         if nombre == "search_presets":
             return {"content": [{"type": "text", "text": "texto que no es JSON"}],
                     "structuredContent": {"presets": [
@@ -366,3 +405,34 @@ def escribir_catalogo(carpeta_presets, datos=None):
     import json as _json
     carpeta_presets.mkdir(parents=True, exist_ok=True)
     (carpeta_presets / "higgsfield_catalogo.json").write_text(_json.dumps(datos or CATALOGO_HF))
+
+
+# ---------------------------------------------------------------- OpenAI falso (imágenes)
+
+class EstadoOpenAI:
+    def __init__(self):
+        self.reiniciar()
+
+    def reiniciar(self):
+        self.pedidos = []
+        self.activos = 0
+        self.max_activos = 0
+
+
+OPENAI = EstadoOpenAI()
+
+
+class ManejadorOpenAI(Base):
+    def do_POST(self):
+        import time as _time
+        from app.trabajos import png_degradado
+        datos = json.loads(self._cuerpo())
+        OPENAI.pedidos.append(datos)
+        OPENAI.activos += 1
+        OPENAI.max_activos = max(OPENAI.max_activos, OPENAI.activos)
+        _time.sleep(0.3)
+        OPENAI.activos -= 1
+        if "FALLA" in datos["prompt"]:
+            return self._json(400, {"error": {"message": "bad prompt", "code": "invalid"}})
+        b64 = base64.b64encode(png_degradado(4, 4)).decode()
+        self._json(200, {"data": [{"b64_json": b64}]})

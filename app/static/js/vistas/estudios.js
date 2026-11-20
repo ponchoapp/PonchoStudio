@@ -120,6 +120,15 @@ export async function montar(raiz, ctx) {
       el("p", {}, "Flujos guiados. Llenas pocas cosas y te dejo el generador listo para revisar y generar.")),
     el("div", { class: "estudios" }, estudios.map((e) => tarjetaEstudio(e, ctx))));
   raiz.append(pagina);
+  // Desde Explorar ("Cine") llega precargado el estudio a mostrar.
+  const pedido = ctx.precarga && ctx.precarga.estudio;
+  if (pedido) {
+    const art = document.getElementById(`estudio-${pedido}`);
+    if (art) {
+      art.classList.add("resaltado");
+      requestAnimationFrame(() => { art.scrollIntoView({ block: "start" }); const f = art.querySelector("input, textarea, select"); if (f) f.focus({ preventScroll: true }); });
+    }
+  }
 }
 
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
@@ -137,7 +146,7 @@ function tarjetaEstudio(e, ctx) {
     ctx.irA(destino, p);
   };
   const [w, h] = e.forma;
-  return el("article", { class: "estudio", "aria-labelledby": `est-${e.id}` },
+  return el("article", { class: "estudio", id: `estudio-${e.id}`, "aria-labelledby": `est-${e.id}` },
     el("div", { class: "estudio-arte" },
       el("span", { class: "insignia tag" }, e.etiqueta),
       el("i", { class: "forma-grande", style: { width: w * 2.4 + "px", height: h * 2.4 + "px" }, "aria-hidden": "true" }, el("b"), el("b"), el("b"))),

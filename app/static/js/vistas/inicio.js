@@ -2,15 +2,9 @@
 // ejemplos reales (presets de Higgsfield) con video al pasar el mouse, tu galería de
 // Higgsfield y tus generaciones locales. Sin Higgsfield: aviso + plantillas locales.
 import { api } from "../api.js";
-import { el, limpiar, icono, arte, modal, toast, tarjetaMedio, abrirVisor, masonry, columnasExplorar, insigniaDemo } from "../ui.js";
+import { el, limpiar, icono, arte, modal, toast, usd, confirmar, tarjetaMedio, abrirVisor, masonry, columnasExplorar } from "../ui.js";
 import { accionesVisor } from "../generador.js";
 
-const HERRAMIENTAS = [
-  { id: "cine", titulo: "Cine", texto: "Plano, cámara y lente guiados", ruta: "estudios", precarga: { estudio: "cine" } },
-  { id: "video", titulo: "Video", texto: "Seedance 2.5 directo, 4 a 30 s", ruta: "video" },
-  { id: "imagen", titulo: "Imagen", texto: "gpt-image-2 con referencias", ruta: "imagen" },
-  { id: "estudios", titulo: "Estudios", texto: "Producto, videoclip y retrato", ruta: "estudios" },
-];
 const DEFECTO = { video: "seedance-2.5", imagen: "gpt-image-2" };
 const sinMovimiento = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const tipoLocal = (t) => (t === "image" || t === "imagen" ? "imagen" : "video");
@@ -120,73 +114,99 @@ export async function montar(raiz, ctx) {
     } finally { if (boton) boton.disabled = false; }
   };
 
-  /* Herramientas */
-  const fondos = presets ? presets.filter((p) => p.preview) : [];
-  const carrusel = el("nav", { class: "carrusel", "aria-label": "Herramientas" },
-    HERRAMIENTAS.map((h, i) => {
-      const p = fondos[i];
-      const medio = p ? medioVista(p.preview, p.preview_tipo === "imagen" ? "imagen" : "video", "") : null;
-      const a = el("a", { class: "herramienta", href: `#/${h.ruta}` },
-        el("div", { class: "herramienta-fondo ruido", style: { background: arte(h.id + "x") } }, medio),
-        el("strong", {}, h.titulo), el("span", {}, h.texto));
-      if (h.precarga) a.onclick = (e) => { e.preventDefault(); ctx.irA(h.ruta, h.precarga); };
-      if (medio && medio.tagName === "VIDEO") {
-        a.onmouseenter = () => { if (!sinMovimiento()) medio.play().catch(() => {}); };
-        a.onmouseleave = () => medio.pause();
-      }
-      return a;
-    }));
-
-  const pagina = el("div", { class: "pagina" }, el("h1", { class: "solo-lector" }, "Explorar"), carrusel);
+  const pagina = el("div", { class: "pagina pagina-explorar" }, el("h1", { class: "solo-lector" }, "Explorar"));
   raiz.append(pagina);
 
-  /* Ejemplos de Higgsfield */
-  if (presets && presets.length) {
-    const categorias = [...new Set(presets.map((p) => p.categoria).filter(Boolean))];
+  /* Aviso discreto si Higgsfield no está conectado */
+  if (!presets) {
+    pagina.append(el("div", { class: "franja-aviso" },
+      el("span", {}, hfConectado ? "Higgsfield no respondió. Los ejemplos vuelven cuando responda." : "Conecta Higgsfield para ver ejemplos reales con video y recrearlos sin gastar créditos."),
+      hfConectado ? el("button", { class: "btn btn-chico", type: "button", onclick: () => ctx.irA("inicio") }, "Volver a intentar")
+        : el("a", { class: "btn btn-chico btn-primario", href: api.rutaConectarHiggsfield }, icono("enlace"), "Conectar Higgsfield")));
+  }
+
+  /* Franja: crear miniaturas de plantillas con ChatGPT */
+  const sinMini = plantillas.filter((p) => !p.miniatura);
+  if (sinMini.length) {
+    const franja = el("div", { class: "franja-aviso" });
+    pagina.append(franja);
+    api.miniaturasCosto().then((c) => {
+      const usdTxt = c && c.usd != null ? ` · ~${usd(c.usd)}` : "";
+      const total = (c && c.total) || sinMini.length;
+      const btn = el("button", { class: "btn btn-chico", type: "button" }, icono("imagen"), `Crear miniaturas con ChatGPT${usdTxt}`);
+      limpiar(franja, el("span", {}, `${total} ${total === 1 ? "plantilla no tiene" : "plantillas no tienen"} imagen.`), btn);
+      btn.onclick = async () => {
+        const si = await confirmar({ titulo: "¿Crear miniaturas con ChatGPT?", texto: `Se crean ${total} imágenes con tu llave de OpenAI${usdTxt ? `. Costo aproximado: ${usd(c.usd)}` : ""}.`, aceptar: `Crear ${total} miniaturas` });
+        if (!si) return;
+        try { await api.miniaturasCrear(); } catch { return; }
+        const barra = el("div", { class: "progreso", role: "progressbar", "aria-label": "Miniaturas creadas", "aria-valuemin": 0, "aria-valuemax": 100 }, el("i"));
+        const txt = el("span", { "aria-live": "polite" }, "Creando miniaturas…");
+        limpiar(franja, txt, el("div", { class: "franja-progreso" }, barra));
+        const sondeo = setInterval(async () => {
+          const e = await api.miniaturasEstado().catch(() => null);
+          if (!e) return;
+          const p = e.total ? Math.round((e.hechas / e.total) * 100) : 0;
+          barra.firstChild.style.setProperty("--v", p + "%");
+          barra.setAttribute("aria-valuenow", p);
+          txt.textContent = `Miniaturas: ${e.hechas} de ${e.total}${e.costo_usd != null ? ` · ${usd(e.costo_usd)}` : ""}`;
+          if (e.listo) { clearInterval(sondeo); toast("Miniaturas listas.", "ok"); await api.presets(true).catch(() => {}); ctx.irA("inicio"); }
+        }, 2000);
+        limpiezas.push(() => clearInterval(sondeo));
+      };
+    }).catch(() => { franja.remove(); });
+  }
+
+  /* Masonry principal: ejemplos de Higgsfield + plantillas con miniatura */
+  const conMini = plantillas.filter((p) => p.miniatura);
+  const items = [
+    ...(presets || []).map((p) => ({ origen: "hf", tipo: tipoLocal(p.tipo), categoria: p.categoria, p })),
+    ...conMini.map((p) => ({ origen: "local", tipo: p.categoria === "imagen" ? "imagen" : "video", categoria: "Plantillas", p })),
+  ];
+  if (items.length) {
+    const categorias = [...new Set(items.map((x) => x.categoria).filter(Boolean))];
     let filtro = "todo";
     const grilla = masonry(columnasExplorar);
     limpiezas.push(() => grilla.soltar());
     const pestanas = el("div", { class: "pestanas", role: "group", "aria-label": "Filtrar ejemplos" });
-    const tarjetas = presets.map((p) => {
-      const tipo = tipoLocal(p.preview_tipo || p.tipo);
-      const t = tarjetaVista({
-        url: p.preview, tipo, titulo: p.nombre, sub: p.categoria, semilla: p.id,
-        etiquetaAbrir: `Ver ejemplo ${p.nombre}`,
-        onAbrir: () => verMedio({ url: p.preview, tipo, titulo: p.nombre, texto: p.prompt, onRecrear: (b) => recrearPreset(p, b) }),
-        onRecrear: (b) => recrearPreset(p, b),
-      });
-      t.preset = p;
-      return t;
-    });
+    for (const x of items) {
+      const p = x.p;
+      if (x.origen === "hf") {
+        const tipo = tipoLocal(p.preview_tipo || p.tipo);
+        x.tarjeta = tarjetaVista({
+          url: p.preview, tipo, titulo: p.nombre, sub: p.categoria, semilla: p.id, etiquetaAbrir: `Ver ejemplo ${p.nombre}`,
+          onAbrir: () => verMedio({ url: p.preview, tipo, titulo: p.nombre, texto: p.prompt, onRecrear: (b) => recrearPreset(p, b) }),
+          onRecrear: (b) => recrearPreset(p, b),
+        });
+      } else {
+        const usar = () => ctx.irA(x.tipo, { prompt: p.prompt, modelo: modeloDirecto(x.tipo, p.modelo_sugerido) });
+        x.tarjeta = tarjetaVista({
+          url: p.miniatura, tipo: "imagen", titulo: p.nombre, sub: x.tipo === "video" ? "Plantilla de video" : "Plantilla", semilla: p.id,
+          etiquetaAbrir: `Ver plantilla ${p.nombre}`,
+          onAbrir: () => verMedio({ url: p.miniatura, tipo: "imagen", titulo: p.nombre, texto: p.prompt, onRecrear: usar }),
+          onRecrear: usar,
+        });
+      }
+    }
     const pintar = () => {
       pestanas.replaceChildren(...[["todo", "Todo"], ["video", "Video"], ["imagen", "Imagen"], ...categorias.map((c) => [c, c])].map(([id, txt]) =>
         el("button", { class: "pill", type: "button", "aria-pressed": String(filtro === id), onclick: () => { filtro = id; pintar(); } }, txt)));
-      grilla.poner(tarjetas.filter((t) => filtro === "todo" || tipoLocal(t.preset.tipo) === filtro || t.preset.categoria === filtro));
+      grilla.poner(items.filter((x) => filtro === "todo" || x.tipo === filtro || x.categoria === filtro).map((x) => x.tarjeta));
     };
     pintar();
-    pagina.append(el("section", { class: "seccion", "aria-labelledby": "ej-titulo" },
-      el("div", { class: "seccion-cabeza" }, el("h2", { id: "ej-titulo" }, "Ejemplos para recrear"),
-        el("span", { class: "nota" }, "Recrear usa Seedance o gpt-image directo: no gasta créditos")),
-      pestanas, grilla));
-  } else {
-    // Sin Higgsfield: aviso y plantillas locales en una lista compacta.
-    pagina.append(el("section", { class: "aviso-caja" },
-      el("h2", {}, hfConectado ? "Higgsfield no respondió" : "Conecta Higgsfield para ver ejemplos reales"),
-      el("p", {}, hfConectado ? "No se pudieron leer los ejemplos. Vuelve a intentar en un momento." : "Aquí aparecen videos e imágenes de ejemplo con su prompt, listos para recrear sin gastar créditos."),
-      el("div", { class: "hero-acciones" },
-        hfConectado ? el("button", { class: "btn", type: "button", onclick: () => ctx.irA("inicio") }, "Volver a intentar")
-          : el("a", { class: "btn btn-primario", href: api.rutaConectarHiggsfield }, icono("enlace"), "Conectar Higgsfield"))));
-    if (plantillas.length) {
-      pagina.append(el("section", { class: "seccion", "aria-labelledby": "pla-titulo" },
-        el("h2", { id: "pla-titulo" }, "Plantillas"),
-        el("ul", { class: "lista-plantillas" }, plantillas.map((p) => {
-          const destino = p.categoria === "imagen" ? "imagen" : "video";
-          return el("li", {}, el("button", { class: "fila-plantilla", type: "button", onclick: () => ctx.irA(destino, { prompt: p.prompt, modelo: modeloDirecto(destino, p.modelo_sugerido) }) },
-            el("span", { class: "insignia" }, icono(destino), destino === "video" ? "Video" : "Imagen"),
-            el("span", { class: "fila-plantilla-txt" }, el("strong", {}, p.nombre), el("small", {}, p.prompt)),
-            el("span", { class: "fila-plantilla-usar" }, "Usar")));
-        }))));
-    }
+    pagina.append(el("section", { class: "seccion", "aria-label": "Ejemplos para recrear" }, pestanas, grilla));
+  }
+
+  /* Plantillas sin miniatura y sin Higgsfield: lista compacta */
+  if (!items.length && sinMini.length) {
+    pagina.append(el("section", { class: "seccion", "aria-labelledby": "pla-titulo" },
+      el("h2", { id: "pla-titulo" }, "Plantillas"),
+      el("ul", { class: "lista-plantillas" }, sinMini.map((p) => {
+        const destino = p.categoria === "imagen" ? "imagen" : "video";
+        return el("li", {}, el("button", { class: "fila-plantilla", type: "button", onclick: () => ctx.irA(destino, { prompt: p.prompt, modelo: modeloDirecto(destino, p.modelo_sugerido) }) },
+          el("span", { class: "insignia" }, icono(destino), destino === "video" ? "Video" : "Imagen"),
+          el("span", { class: "fila-plantilla-txt" }, el("strong", {}, p.nombre), el("small", {}, p.prompt)),
+          el("span", { class: "fila-plantilla-usar" }, "Usar")));
+      }))));
   }
 
   /* Tus generaciones en Higgsfield */
