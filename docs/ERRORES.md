@@ -62,3 +62,7 @@ color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminad
 ## 19 nov 2026 · Probar "modo demo" con llaves reales en el .env
 **Qué pasó:** al abrir la app para probar el demo, Poncho ya había pegado sus llaves: la app en 8010 NO estaba en demo y un clic en Generar gastaba plata.
 **Regla para no repetirlo:** el demo se prueba en otra copia: `ARK_API_KEY= OPENAI_API_KEY= DATA_DIR=<temporal> HIGGSFIELD_MCP_URL=http://127.0.0.1:9/mcp python -m app --sin-navegador --puerto 8011`. Las variables de entorno ganan sobre el .env.
+
+## 19 nov 2026 · Explorar armado contra un MCP imaginado
+**Qué pasó:** la galería y los presets se programaron con servidores falsos de forma inventada. Contra mcp.higgsfield.ai real: la galería salía vacía (la URL viene en `results.rawUrl`, no en `url`), `size` no se mandaba (viene como `anyOf`), el cursor decimal se perdía, y los presets daban 502 porque el cursor `"12"` en texto se toma como cursor de Katana.
+**Regla para no repetirlo:** antes de escribir el lector de una herramienta MCP, llamar la herramienta real una vez (solo lectura) y guardar la forma en una prueba (`test_forma_real_del_mcp_de_higgsfield`). Los cursores numéricos se mandan como número.

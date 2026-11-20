@@ -935,6 +935,11 @@ CAMPOS_FUENTE = ("source", "fuente", "collection", "category", "tab", "group", "
 CLAVES_SIGUIENTE = ("next_cursor", "nextCursor", "next_page_token", "nextPageToken", "next", "cursor")
 EXT_VIDEO = ("mp4", "mov", "webm", "m4v")
 MAX_PRESETS = 200
+# Fuentes de get_presets que traen vista previa y una idea útil para recrear (leído del MCP real, 19 nov 2026).
+# Fuera: genjutsu (pide video guía y su "description" son instrucciones para el agente), katana (sin
+# descripción), recraft (estilos propios), shorts_studio y short_drama (solo abren un widget).
+FUENTES_PRESETS = ("viral", "what_if", "marketing_studio", "soul")
+MAX_POR_FUENTE = 60
 VIGENCIA_PRESETS = 24 * 3600
 VIGENCIA_GALERIA = 10 * 60
 _cache_galeria: dict = {}  # (tipo, cursor) → (hora, respuesta)
@@ -972,6 +977,37 @@ def _valor_enum(prop: dict, deseado: str):
     return next((v for v in enum if any(x in str(v).lower() for x in sinonimos)), None)
 
 
+def _es_numero(prop: dict) -> bool:
+    """El campo acepta número (también cuando viene como anyOf: [{integer}, {string con patrón}])."""
+    tipos = [prop.get("type")] + [(x or {}).get("type") for x in prop.get("anyOf") or []]
+    return any(t in ("integer", "number") for t in tipos)
+
+
+def _maximo(prop: dict, defecto: int) -> int:
+    for x in [prop] + list(prop.get("anyOf") or []):
+        if isinstance((x or {}).get("maximum"), (int, float)):
+            return int(x["maximum"])
+    return defecto
+
+
+def _cursor_valor(valor):
+    """"12" -> 12: el MCP de Higgsfield toma un texto como cursor "opaco" (solo vale en Katana)."""
+    if isinstance(valor, str) and valor.strip().isdigit():
+        return int(valor.strip())
+    return valor
+
+
+def _fecha_iso(valor) -> str | None:
+    if isinstance(valor, bool):
+        return None
+    if isinstance(valor, (int, float)):
+        segundos = valor / 1000 if valor > 1e11 else valor  # milisegundos o segundos
+        return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(segundos))
+    if isinstance(valor, str) and valor.strip():
+        return valor.strip()
+    return None
+
+
 def _items_de(datos) -> list[dict]:
     """La lista de objetos más larga dentro de la respuesta."""
     mejor: list[dict] = []
@@ -997,8 +1033,8 @@ def _siguiente_de(datos) -> str | None:
         return None
     for clave in CLAVES_SIGUIENTE:
         v = datos.get(clave)
-        if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v):
-            return str(v)
+        if isinstance(v, (str, int, float)) and not isinstance(v, bool) and str(v):
+            return str(v)  # show_generations usa un epoch con decimales como cursor
     for anidado in ("pagination", "meta", "page_info", "pageInfo"):
         r = _siguiente_de(datos.get(anidado))
         if r:
@@ -1014,13 +1050,17 @@ def _primer_texto(obj: dict, claves: tuple[str, ...]) -> str | None:
     return None
 
 
+# show_generations real: "results": {"rawUrl": ..., "minUrl": ... (webp, solo imágenes)}
+CLAVES_URL_ANIDADA = ("rawUrl", "url", "raw_url", "src", "video_url", "image_url", "minUrl")
+
+
 def _url_medio(obj: dict, claves: tuple[str, ...]) -> str | None:
     for c in claves:
         v = obj.get(c)
         if isinstance(v, str) and v.startswith(("http://", "https://")):
             return v
         if isinstance(v, dict):
-            r = _url_medio(v, ("url", "src", "video_url", "image_url"))
+            r = _url_medio(v, CLAVES_URL_ANIDADA)
             if r:
                 return r
         if isinstance(v, list):
@@ -1028,7 +1068,7 @@ def _url_medio(obj: dict, claves: tuple[str, ...]) -> str | None:
                 if isinstance(x, str) and x.startswith("http"):
                     return x
                 if isinstance(x, dict):
-                    r = _url_medio(x, ("url", "src", "video_url", "image_url"))
+                    r = _url_medio(x, CLAVES_URL_ANIDADA)
                     if r:
                         return r
     return None
@@ -1069,15 +1109,26 @@ def _item_galeria(obj: dict) -> dict | None:
     if not url:
         return None
     modelo = _primer_texto(obj, ("job_set_type", "model", "model_id", "model_name"))
+    resultados = obj.get("results") if isinstance(obj.get("results"), dict) else {}
+    parametros = obj.get("params") if isinstance(obj.get("params"), dict) else {}
+    miniatura = (_url_medio(resultados, ("minUrl", "thumbnail_url", "thumbnail")) or
+                 _url_medio(obj, ("thumbnail_url", "thumbnail", "poster", "preview_image", "thumb",
+                                  "cover", "preview_url")))
+    prompt = parametros.get("prompt") if isinstance(parametros.get("prompt"), str) else None
+    duracion = parametros.get("duration")
+    fecha = next((obj[c] for c in ("created_at", "createdAt", "created", "date", "timestamp", "updated_at")
+                  if obj.get(c) not in (None, "")), None)
     return {
         "id": _primer_texto(obj, ("id", "job_id", "generation_id", "job_set_id")) or
               hashlib.sha1(url.encode()).hexdigest()[:12],
         "modelo": modelo,
         "url": url,
-        "miniatura": _url_medio(obj, ("thumbnail_url", "thumbnail", "poster", "preview_image", "thumb",
-                                      "cover", "preview_url")),
+        "miniatura": miniatura if miniatura != url else None,
         "tipo": _tipo_de_item(obj, url, modelo) or "imagen",
-        "fecha": _primer_texto(obj, ("created_at", "createdAt", "created", "date", "timestamp", "updated_at")),
+        "fecha": _fecha_iso(fecha),
+        "prompt": prompt.strip() if prompt and prompt.strip() else None,
+        "formato": _primer_texto(parametros, ("aspect_ratio", "ratio")),
+        "duracion": duracion if isinstance(duracion, (int, float)) and not isinstance(duracion, bool) else None,
     }
 
 
@@ -1097,8 +1148,8 @@ def galeria(tipo: str | None = None, cursor: str | None = None) -> dict:
     for nombre, prop in props.items():
         n = nombre.lower()
         prop = prop or {}
-        if n in ("limit", "page_size", "per_page", "count", "size") and prop.get("type") in ("integer", "number"):
-            args[nombre] = int(min(50, prop.get("maximum", 50)))
+        if n in ("limit", "page_size", "per_page", "count", "size") and _es_numero(prop):
+            args[nombre] = min(50, _maximo(prop, 50))
         elif n in CAMPOS_CURSOR and campo_cursor is None:
             campo_cursor = nombre
             if cursor:
@@ -1148,6 +1199,15 @@ def leer_presets_guardados() -> dict | None:
     return datos
 
 
+def _formato_por_medidas(obj: dict) -> str | None:
+    """preview_width/preview_height (600x1066) -> "9:16" aproximado."""
+    w, h = obj.get("preview_width"), obj.get("preview_height")
+    if not all(isinstance(x, (int, float)) and not isinstance(x, bool) and x > 0 for x in (w, h)):
+        return None
+    r = w / h
+    return "16:9" if r > 1.3 else "9:16" if r < 0.77 else "1:1"
+
+
 def _item_preset(obj: dict, fuente: str | None) -> dict | None:
     pid = _primer_texto(obj, ("id", "preset_id", "slug", "uuid", "key"))
     nombre = _primer_texto(obj, ("name", "title", "nombre", "label"))
@@ -1157,24 +1217,31 @@ def _item_preset(obj: dict, fuente: str | None) -> dict | None:
                                "media_url", "thumbnail_url", "image_url", "cover", "thumbnail", "url",
                                "examples", "media"))
     modelo = _primer_texto(obj, ("model", "model_id", "job_set_type", "model_name"))
+    miniatura = _url_medio(obj, ("thumbnail_url", "thumbnail", "poster", "cover"))
+    descripcion = _primer_texto(obj, ("description", "descripcion", "summary"))
     prompt = None
     for c in ("prompt", "text_prompt", "positive_prompt", "default_prompt", "prompt_template"):
         if isinstance(obj.get(c), str) and obj[c].strip():
             prompt = obj[c].strip()
             break
-    tipo = _tipo_de_item(obj, None, modelo) or _tipo_por_url(preview) or "video"
+    # El MCP real manda preview_type ("video"/"image"); las URL de what_if no tienen extensión.
+    pt = str(obj.get("preview_type") or "").lower()
+    preview_tipo = "video" if pt == "video" else "imagen" if pt in ("image", "imagen") else None
+    tipo = _tipo_de_item(obj, None, modelo) or preview_tipo or _tipo_por_url(preview) or "video"
     categoria = _primer_texto(obj, ("category", "categoria", "group", "collection", "section")) or fuente
     return {
         "id": pid or "hf-" + hashlib.sha1(nombre.encode()).hexdigest()[:10],
         "nombre": nombre or pid,
         "tipo": tipo,
         "preview": preview,
-        "preview_tipo": _tipo_por_url(preview) or ("video" if preview and tipo == "video" else "imagen"),
+        "preview_tipo": preview_tipo or _tipo_por_url(preview) or ("video" if preview and tipo == "video" else "imagen"),
+        "miniatura": miniatura if miniatura != preview else None,
+        "descripcion": descripcion,
         "prompt": prompt,
         "modelo": modelo,
         "categoria": categoria,
         # extras para recrear: formato y duración del preset si los trae
-        "formato": _primer_texto(obj, ("aspect_ratio", "ratio", "formato")),
+        "formato": _primer_texto(obj, ("aspect_ratio", "ratio", "formato")) or _formato_por_medidas(obj),
         "duracion": obj.get("duration") if isinstance(obj.get("duration"), (int, float))
         and not isinstance(obj.get("duration"), bool) else None,
     }
@@ -1184,19 +1251,24 @@ def _bajar_presets(herramienta: dict) -> list[dict]:
     """Recorre fuentes (si el esquema trae un enum) y páginas, hasta ~200 items."""
     props, requeridos = _props(herramienta)
     campo_fuente = next((n for n, p in props.items() if n.lower() in CAMPOS_FUENTE and (p or {}).get("enum")), None)
-    fuentes = list(props[campo_fuente]["enum"]) if campo_fuente else [None]
+    if campo_fuente:
+        enum = list(props[campo_fuente]["enum"])
+        fuentes = [f for f in FUENTES_PRESETS if f in enum] or enum
+    else:
+        fuentes = [None]
     campo_cursor = next((n for n in props if n.lower() in CAMPOS_CURSOR), None)
     campo_limite = next((n for n, p in props.items() if n.lower() in ("limit", "page_size", "per_page", "count")
-                         and (p or {}).get("type") in ("integer", "number")), None)
+                         and _es_numero(p or {})), None)
     salida: dict[str, dict] = {}
     for fuente in fuentes:
         cursor = None
+        de_esta = 0
         for _ in range(20):
             args: dict = {}
             if campo_fuente and fuente is not None:
                 args[campo_fuente] = fuente
             if campo_limite:
-                args[campo_limite] = int(min(50, (props[campo_limite] or {}).get("maximum", 50)))
+                args[campo_limite] = min(50, _maximo(props[campo_limite] or {}, 50))
             if campo_cursor and cursor is not None:
                 args[campo_cursor] = cursor
             faltan = [r for r in requeridos if r not in args and "default" not in (props.get(r) or {})]
@@ -1206,11 +1278,12 @@ def _bajar_presets(herramienta: dict) -> list[dict]:
             crudos = _items_de(datos) if datos is not None else []
             for o in crudos:
                 item = _item_preset(o, str(fuente) if fuente is not None else None)
-                if item and item["id"] not in salida:
+                if item and item["id"] not in salida and de_esta < MAX_POR_FUENTE:
                     salida[item["id"]] = item
-            if len(salida) >= MAX_PRESETS or not crudos or not campo_cursor:
+                    de_esta += 1
+            if len(salida) >= MAX_PRESETS or de_esta >= MAX_POR_FUENTE or not crudos or not campo_cursor:
                 break
-            siguiente = _siguiente_de(datos)
+            siguiente = _cursor_valor(_siguiente_de(datos))
             if siguiente is None and campo_cursor.lower() in ("page", "offset"):
                 base = int(cursor or (1 if campo_cursor.lower() == "page" else 0))
                 siguiente = base + (1 if campo_cursor.lower() == "page" else len(crudos))
@@ -1301,11 +1374,13 @@ def recrear(preset_id: str) -> dict | None:
         sugerido = "gpt-image-2"
         ajustes = {"calidad": "medium", "formato": _formato_de(formato_original, ["1:1", "2:3", "3:2"], "1:1"),
                    "semilla": None, "variantes": 1}
-    salida = {"prompt": item.get("prompt") or item.get("nombre") or "", "modelo_sugerido": sugerido,
+    idea = item.get("prompt") or item.get("descripcion") or item.get("nombre") or ""
+    salida = {"prompt": idea, "modelo_sugerido": sugerido,
               "ajustes": ajustes, "tipo": tipo, "exclusivo": exclusivo,
               "modelo_higgsfield": info_hf["id"] if info_hf else None}
     if not item.get("prompt"):
-        salida["nota"] = "El preset no trae prompt: se usa su nombre como idea. Mejóralo antes de generar."
+        de_donde = "su descripción" if item.get("descripcion") else "su nombre"
+        salida["nota"] = f"El preset no trae prompt: se usa {de_donde} como idea. Mejóralo antes de generar."
     elif exclusivo:
         salida["nota"] = (f"Este preset es de {info_hf['nombre']} (exclusivo de Higgsfield). "
                           "Se sugiere Seedance 2.5 directo para no gastar créditos." if tipo == "video" else

@@ -2,7 +2,7 @@
 
 Archivo que resume TODA la conversación y las decisiones. Se actualiza en cada avance.
 Si la conversación se compacta o se empieza una nueva sesión, leer esto primero.
-Última actualización: 19 nov 2026, 20:45 (hora Colombia).
+Última actualización: 19 nov 2026, 21:20 (hora Colombia).
 
 ## 1. Qué pidió Poncho (sus palabras, resumidas)
 - Una app nueva para crear videos e imágenes **con interfaz como Higgsfield** (inicio/explorar, imagen, video,
@@ -194,6 +194,23 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
   GPU RTX 4050 6 GB. Por defecto ahora **Gemma 4 E4B** (~4 s, el texto más rico). Qwen 3.5 solo sirve con `think:false`
   (sin eso, 85 s y respuesta vacía): arreglado en `proveedores/ollama.py`.
 - En curso: **v0.2.0** = Seedream 5.5 (imagen, misma ARK_API_KEY), botón "Comparar" y OpenRouter como plan B de Seedance.
+
+## 5e. Orden que pidió Poncho (19 nov, 21:00) y dónde voy
+Reglas nuevas: **decir cuánto vale cada cosa ANTES de generarla** (OpenAI, BytePlus, OpenRouter o Higgsfield) y esperar su sí.
+Usar las skills de diseño que instaló (frontend-design, impeccable, ui-ux-pro-max, web-design-guidelines).
+`design-taste-frontend`: NO usarla sin leer su SKILL.md y scripts y contarle a Poncho qué hace (salió "Critical Risk").
+1. [x] Servidor 8010 reiniciado con el código nuevo (rediseño). Explorar contra el MCP real:
+   - Galería estaba vacía: el MCP manda `results.rawUrl`/`minUrl`, `size` con `anyOf`, `createdAt` epoch y
+     `next_cursor` decimal. Arreglado. **El historial del MCP completo SÍ trae `params.prompt`** (45 de 50 videos).
+   - Presets daban 502: cursor "12" como texto = cursor opaco de Katana. Arreglado (`_cursor_valor`). Fuentes:
+     viral, what_if, marketing_studio, soul (60 c/u, 200 en total, 4.7 s). Sin prompt: Recrear usa `description`.
+   - Falta: probar Explorar en Chrome ("Browser 1") y poner "Recrear" en "Tus generaciones en Higgsfield"
+     (inicio.js, ahora que traen prompt) → carga el prompt en Seedance directo (no gasta).
+2. [ ] Miniaturas de plantillas con ChatGPT: autorizado ~US$0,50. Antes de lanzar, mirar el costo real con
+   `POST /api/plantillas/miniaturas/costo` y decírselo.
+3. [ ] Pulir la interfaz vista por vista con las skills, con capturas de antes y después (Bitwarden bloquea las
+   capturas de Claude in Chrome: probar con la extensión en pausa o capturar con otra herramienta).
+4. [ ] v0.2.0: Seedream 5.5, OpenRouter (plan B de Seedance) y "Comparar".
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).

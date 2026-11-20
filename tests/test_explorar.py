@@ -27,7 +27,8 @@ def test_galeria_video_imagen_y_cursor(hf):
     assert [i["id"] for i in r["items"]] == ["g1", "g2", "g3"]
     g1 = r["items"][0]
     assert g1 == {"id": "g1", "modelo": "seedance_2_5", "url": ESTADO.base + "/media/a.mp4",
-                  "miniatura": ESTADO.base + "/media/a.jpg", "tipo": "video", "fecha": "2026-11-01"}
+                  "miniatura": ESTADO.base + "/media/a.jpg", "tipo": "video", "fecha": "2026-11-01",
+                  "prompt": None, "formato": None, "duracion": None}
     assert r["siguiente"] == "g2"
     assert llamadas("show_generations")[-1] == {"limit": 20, "type": "video"}
     img = higgsfield.galeria("image")
@@ -56,6 +57,7 @@ def test_presets_recorre_fuentes_y_paginas_y_guarda(hf):
     por_id = {i["id"]: i for i in r["items"]}
     assert por_id["p1"] == {"id": "p1", "nombre": "Crash Zoom", "tipo": "video",
                             "preview": ESTADO.base + "/media/p1.mp4", "preview_tipo": "video",
+                            "miniatura": None, "descripcion": None,
                             "prompt": "Crash zoom into the eyes of a boxer, sweat flying",
                             "modelo": "kling3_0", "categoria": "trending", "formato": None,
                             "duracion": None}
@@ -116,3 +118,28 @@ def test_recrear(hf):
     assert p4["prompt"] == "Sin prompt" and "nota" in p4
     assert higgsfield.recrear("no-existe") is None
     assert len(ESTADO.llamadas) == llamadas_antes  # recrear no llama al MCP
+
+
+def test_forma_real_del_mcp_de_higgsfield():
+    """Datos copiados de la respuesta real de mcp.higgsfield.ai (19 nov 2026)."""
+    from app.proveedores import higgsfield as h
+    gen = {"id": "3a35", "type": "video", "status": "completed", "model": "seedance_2_5",
+           "params": {"prompt": "TIMELINE (11 seconds) sneakers", "aspect_ratio": "9:16", "duration": 11},
+           "results": {"rawUrl": "https://cdn.x/hf_1.mp4"}, "createdAt": 1793491817.240549, "liked": False}
+    i = h._item_galeria(gen)
+    assert i["url"] == "https://cdn.x/hf_1.mp4" and i["tipo"] == "video" and i["miniatura"] is None
+    assert i["prompt"].startswith("TIMELINE") and i["formato"] == "9:16" and i["duracion"] == 11
+    assert i["fecha"].startswith("2026-1")  # epoch con decimales -> ISO
+    img = {"id": "5ade", "type": "image", "model": "nano_banana_2", "params": {"prompt": "x"},
+           "results": {"rawUrl": "https://cdn.x/a.png", "minUrl": "https://cdn.x/a_min.webp"}, "createdAt": 1793850394.5}
+    assert h._item_galeria(img)["miniatura"] == "https://cdn.x/a_min.webp"
+    assert h._siguiente_de({"items": [], "next_cursor": 1793850389.335398}) == "1793850389.335398"
+    assert h._cursor_valor("12") == 12 and h._cursor_valor("katana-abc") == "katana-abc"
+    size = {"anyOf": [{"default": 24, "type": "integer", "minimum": 1, "maximum": 100},
+                      {"type": "string", "pattern": "^\d+$"}]}
+    assert h._es_numero(size) and h._maximo(size, 50) == 100
+    preset = {"id": "what-if/haze", "name": "Haze Countdown", "description": "Hazy grey city streets",
+              "thumbnail_url": "https://cdn.x/t", "preview_url": "https://cdn.x/p", "preview_type": "video"}
+    p = h._item_preset(preset, "what_if")
+    assert p["preview_tipo"] == "video" and p["tipo"] == "video" and p["miniatura"] == "https://cdn.x/t"
+    assert p["descripcion"] == "Hazy grey city streets" and p["prompt"] is None

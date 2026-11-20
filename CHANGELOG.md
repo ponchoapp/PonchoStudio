@@ -14,6 +14,10 @@ Cada versión lleva su etiqueta de git (`v0.1.0`). Sube `VERSION` en `app/__init
 - `INSTALAR.bat` funciona con Python 3.13/3.14 si no hay 3.12, e instala pytest.
 - Pruebas en Windows: 12 fallaban por la espera de 2 s de un puerto cerrado; ahora usan un servicio falso "apagado".
 
+- Explorar con Higgsfield real: la galería salía vacía y los presets daban error 502. Ahora lee la forma real del MCP
+  (`results.rawUrl`, cursores numéricos, `preview_type`) y trae el prompt de cada generación.
+- "Recrear" un preset sin prompt usa su descripción como idea.
+
 ### Cambiado
 - Si `OLLAMA_MODELO` está vacío se prefiere Gemma 4, luego Qwen 3.5. El mejorador pide piel natural (sin tono
   amarillo), colores sin saturar y cámara suave.
