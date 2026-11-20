@@ -368,7 +368,8 @@ export function chipEstado(estado, progreso) {
 export const insigniaDirecto = () => el("span", { class: "insignia insignia-directo", title: "Va directo al proveedor con tu llave" }, "Directo");
 export function iconoModelo(m) {
   // Sigla corta: inicial + versión + inicial extra (Seedance 2.0 Fast → S2.0F).
-  const palabras = String(m.nombre || m.id).split(/\s+/).filter(Boolean);
+  // Sin lo que va entre paréntesis: "Seedance 2.5 (Higgsfield)" → S2.5, no "S2.5(".
+  const palabras = String(m.nombre || m.id).replace(/\([^)]*\)/g, " ").split(/\s+/).filter(Boolean);
   const iv = palabras.findIndex((w) => /^\d/.test(w));
   let sigla = palabras[0][0];
   if (iv >= 0) sigla += palabras[iv] + (palabras[iv + 1] ? palabras[iv + 1][0] : "");

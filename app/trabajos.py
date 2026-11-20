@@ -370,8 +370,9 @@ def spec_para_repetir(trabajo_id: str, confirmar_creditos: bool = False) -> dict
 def png_degradado(ancho: int, alto: int, semilla: int = 0) -> bytes:
     """PNG violeta degradado hecho a mano (zlib + struct), sin dependencias."""
     rnd = random.Random(semilla)
-    a = (177 + rnd.randint(-20, 20), 92 + rnd.randint(-20, 20), 255)   # violeta neón #B15CFF
-    b = (26 + rnd.randint(0, 20), 8 + rnd.randint(0, 15), 48 + rnd.randint(0, 30))  # morado oscuro
+    # Violeta apagado (no neón): a Poncho no le gustan los colores sobresaturados.
+    a = (88 + rnd.randint(-12, 12), 66 + rnd.randint(-10, 10), 120 + rnd.randint(-14, 14))
+    b = (16 + rnd.randint(0, 8), 14 + rnd.randint(0, 6), 24 + rnd.randint(0, 10))  # casi negro
     filas = bytearray()
     for y in range(alto):
         filas.append(0)  # filtro "ninguno"
