@@ -30,6 +30,11 @@ PIXELES_20["480p"]["9:16"] = (496, 864)
 
 NOTA_HIGGSFIELD = "Va por Higgsfield MCP y gasta créditos de tu cuenta. Pide confirmación."
 
+# Curaduría para el selector de modelos (no son capacidades, solo qué mostrar primero).
+# "nuevo" solo se marca con datos verificados: Flash se activó en la consola de ModelArk el 19 nov 2026.
+# Los modelos de Higgsfield pueden traer "nuevo": true en higgsfield_catalogo.json; sin ese dato no se inventa.
+DESTACADOS_HF = {"seedance_2_5", "kling4_0", "cinematic_studio_video_4_0", "nano_banana_pro", "soul_2"}
+
 VIDEO = [
     {
         "id": "seedance-2.5", "nombre": "Seedance 2.5", "proveedor": "seedance",
@@ -38,6 +43,7 @@ VIDEO = [
         "duracion": {"min": 4, "max": 30}, "audio": True,
         "entradas": ["texto", "primer_cuadro", "ultimo_cuadro", "referencias"],
         "gasta_creditos_higgsfield": False,
+        "descripcion": 'Video con audio hasta 30 s, de 480p a 1080p', "nuevo": False, "destacado": True,
         "nota": "API oficial de BytePlus ModelArk. Con foto de entrada el formato sale de la foto.",
         "_api_id": "dreamina-seedance-2-5-260628",
         "_tarifa": {"480p": 10.7, "720p": 10.7, "1080p": 11.7},
@@ -53,6 +59,7 @@ VIDEO = [
         "duracion": {"min": 4, "max": 30}, "audio": True,
         "entradas": ["texto", "primer_cuadro", "ultimo_cuadro", "referencias"],
         "gasta_creditos_higgsfield": False,
+        "descripcion": 'Casi la calidad de 2.5, más rápido y barato', "nuevo": True, "destacado": True,
         "nota": "Casi la calidad de 2.5, el doble de rápido y un 35 % más barato. Ideal para probar.",
         "_api_id": "dreamina-seedance-2-5-flash-261115",
         "_tarifa": {"480p": 7.0, "720p": 7.0},
@@ -66,6 +73,7 @@ VIDEO = [
         "duracion": {"min": 4, "max": 15}, "audio": True,
         "entradas": ["texto", "primer_cuadro", "ultimo_cuadro", "referencias"],
         "gasta_creditos_higgsfield": False,
+        "descripcion": 'Generación anterior, hasta 15 s', "nuevo": False, "destacado": False,
         "nota": "Generación anterior. Hasta 15 s.",
         "_api_id": "dreamina-seedance-2-0-260128",
         "_tarifa": {"480p": 7.0, "720p": 7.0, "1080p": 7.7},
@@ -79,6 +87,7 @@ VIDEO = [
         "duracion": {"min": 4, "max": 15}, "audio": True,
         "entradas": ["texto", "primer_cuadro", "ultimo_cuadro", "referencias"],
         "gasta_creditos_higgsfield": False,
+        "descripcion": 'El más barato y rápido, máximo 720p', "nuevo": False, "destacado": False,
         "nota": "El más barato y rápido. Máximo 720p.",
         "_api_id": "dreamina-seedance-2-0-fast-260128",
         "_tarifa": {"480p": 5.6, "720p": 5.6},
@@ -88,7 +97,15 @@ VIDEO = [
 ]
 
 TAMANOS_IMAGEN = {"1:1": "1024x1024", "2:3": "1024x1536", "3:2": "1536x1024"}
-PRECIO_IMAGEN = {"low": 0.011, "medium": 0.042, "high": 0.167}  # estimado por imagen
+PRECIO_IMAGEN = {"low": 0.011, "medium": 0.042, "high": 0.167}  # estimado por imagen cuadrada (1024x1024)
+PRECIO_IMAGEN_RECTANGULAR = {"low": 0.016, "medium": 0.063, "high": 0.25}  # 1024x1536 y 1536x1024
+
+
+def precio_imagen(calidad: str, formato: str | None = None) -> float:
+    """Tarifa por imagen según el tamaño que sale de TAMANOS_IMAGEN (1:1 cuadrada; 2:3 y 3:2 rectangular)."""
+    tamano = TAMANOS_IMAGEN.get(formato or "1:1", "1024x1024")
+    tabla = PRECIO_IMAGEN if tamano == "1024x1024" else PRECIO_IMAGEN_RECTANGULAR
+    return tabla[calidad]
 
 IMAGEN = [
     {
@@ -97,6 +114,7 @@ IMAGEN = [
         "calidades": ["low", "medium", "high"], "formatos": ["1:1", "2:3", "3:2"],
         "variantes_max": 4, "entradas": ["texto", "referencias"],
         "gasta_creditos_higgsfield": False,
+        "descripcion": 'Imágenes y ediciones con referencias', "nuevo": False, "destacado": True,
         "nota": "Precio estimado por imagen. Sin fondo transparente: pide fondo blanco liso.",
     },
 ]
@@ -122,6 +140,7 @@ def _modelo_hf(m: dict) -> dict | None:
         "etiqueta": "Higgsfield · créditos",
         "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
         "descripcion": m.get("descripcion") or "",
+        "nuevo": m.get("nuevo") is True, "destacado": real in DESTACADOS_HF,
         "_hf_id": real,
     }
     resoluciones = [str(r) for r in m.get("resoluciones") or []]
@@ -233,10 +252,11 @@ def costo(tipo: str, modelo_id: str, resolucion: str | None = None, formato: str
         calidad = calidad or "medium"
         if calidad not in PRECIO_IMAGEN:
             raise ValueError("Calidad no válida.")
-        precio = PRECIO_IMAGEN[calidad]
+        precio = precio_imagen(calidad, formato)
         usd = precio * variantes
+        tamano = TAMANOS_IMAGEN.get(formato or "1:1", "1024x1024")
         return {"usd": round(usd, 4),
-                "detalle": f"estimado: US${precio} por imagen ({calidad}) × {variantes}"}
+                "detalle": f"estimado: US${precio} por imagen ({calidad}, {tamano}) × {variantes}"}
     raise ValueError("Tipo no válido.")
 
 

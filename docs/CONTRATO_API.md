@@ -41,10 +41,13 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
    "resoluciones":["480p","720p","1080p"],"formatos":["16:9","9:16","1:1","4:3","3:4","21:9"],
    "duracion":{"min":4,"max":30},"audio":true,"entradas":["texto","primer_cuadro","ultimo_cuadro","referencias"],
    "gasta_creditos_higgsfield":false, "nota": str}`
+  Campos para el selector de modelos (todos los modelos): `descripcion` (texto corto, "" si no hay), `nuevo` (bool; solo con dato
+  verificado, hoy Seedance 2.5 Flash) y `destacado` (bool; curaduría en `catalogo.DESTACADOS_HF` y en cada modelo directo).
   Modelos de imagen: `{"id":"gpt-image-2", "proveedor":"openai", "calidades":["low","medium","high"], "formatos":["1:1","2:3","3:2"], "variantes_max":4, ...}`
   Modelos de Higgsfield aparecen con `"proveedor":"higgsfield","gasta_creditos_higgsfield":true`.
 - `POST /api/costo` body `{"tipo":"video","modelo":"seedance-2.5","resolucion":"720p","formato":"9:16","duracion":5,"variantes":1}`
-  → `{"usd":0.51,"detalle":"tokens ..."}` (Higgsfield → `{"usd":null,"creditos":n|null,"detalle":"..."}`).
+  → `{"usd":0.51,"detalle":"tokens ..."}`. Imagen: la tarifa depende del tamaño (`formato` 1:1 = 1024x1024; 2:3 y 3:2 = tarifa mayor).
+  El video de referencia NO cambia el precio calculado (ModelArk cobra también el video de entrada): la interfaz lo marca como aproximado. (Higgsfield → `{"usd":null,"creditos":n|null,"detalle":"..."}`).
 
 ### Generar
 - `POST /api/generar` body:
@@ -56,6 +59,8 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
    "estilo":"id-preset"|null, "camara":"id-preset"|null,
    "confirmar_creditos": false}
   ```
+  Referencias: Seedance acepta imagen, video y audio; los demás modelos (gpt-image-2, Higgsfield) solo imágenes
+  (`400` si llega un video o audio). Higgsfield solo recibe enlaces `http(s)` públicos.
   → `201 {"trabajos":[Trabajo]}`. Si el modelo gasta créditos de Higgsfield y `confirmar_creditos` no es true
   → `409 {"error":"...","creditos":n|null,"pide_confirmacion":true}`.
 - `POST /api/subir` multipart campo `archivo` (imagen/video/audio, máx 50 MB) → `{"url":"/medios/abc.png","tipo":"imagen"}`

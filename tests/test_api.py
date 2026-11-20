@@ -209,3 +209,32 @@ def test_higgsfield_y_ollama_apagados(servidor):
 def test_ruta_api_desconocida_da_json(servidor):
     r = requests.get(servidor["base"] + "/api/no-existe")
     assert r.status_code == 404 and "error" in r.json()
+
+
+def _subir(base, nombre, mime, datos):
+    r = requests.post(base + "/api/subir", files={"archivo": (nombre, datos, mime)})
+    assert r.status_code in (200, 201), r.text
+    return r.json()["url"]
+
+
+def test_imagen_no_acepta_video_de_referencia(servidor):
+    """gpt-image-2 (y cualquier modelo que no sea Seedance) solo recibe imágenes como referencia."""
+    b = servidor["base"]
+    video = _subir(b, "clip.mp4", "video/mp4", b"\x00\x00\x00\x18ftypmp42" + b"0" * 64)
+    foto = _subir(b, "f.png", "image/png", b"\x89PNG\r\n\x1a\n" + b"0" * 32)
+    base = {"tipo": "imagen", "modelo": "gpt-image-2", "prompt": "un gato",
+            "ajustes": {"calidad": "low", "formato": "1:1", "variantes": 1}}
+    r = requests.post(b + "/api/generar", json={**base, "entradas": {"referencias": [video]}})
+    assert r.status_code == 400 and "imágenes" in r.json()["error"]
+    ok = requests.post(b + "/api/generar", json={**base, "entradas": {"referencias": [foto]}})
+    assert ok.status_code == 201
+
+
+def test_seedance_si_acepta_video_de_referencia(servidor):
+    b = servidor["base"]
+    video = _subir(b, "clip.mp4", "video/mp4", b"\x00\x00\x00\x18ftypmp42" + b"0" * 64)
+    r = requests.post(b + "/api/generar", json={
+        "tipo": "video", "modelo": "seedance-2.5", "prompt": "cambia el fondo",
+        "ajustes": {"resolucion": "480p", "formato": "16:9", "duracion": 4, "audio": False, "variantes": 1},
+        "entradas": {"referencias": [video]}})
+    assert r.status_code == 201

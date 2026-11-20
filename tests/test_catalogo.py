@@ -113,3 +113,34 @@ def test_catalogo_real_de_higgsfield(entorno):
 
 def test_costo_real_desde_tokens():
     assert catalogo.costo_real_seedance("seedance-2.5", "480p", 48037) == pytest.approx(0.514, abs=1e-3)
+
+
+def test_catalogo_trae_campos_para_el_selector(entorno):
+    """descripcion, nuevo y destacado salen en /api/catalogo; 'nuevo' solo con datos verificados."""
+    escribir_catalogo(entorno().PRESETS)
+    c = catalogo.catalogo_publico()
+    for lista in c.values():
+        for m in lista:
+            assert isinstance(m["nuevo"], bool) and isinstance(m["destacado"], bool)
+            assert isinstance(m["descripcion"], str)
+    directos = {m["id"]: m for m in c["video"] + c["imagen"] if m["proveedor"] != "higgsfield"}
+    assert directos["seedance-2.5-flash"]["nuevo"] is True
+    assert directos["seedance-2.5"]["destacado"] is True and directos["seedance-2.5"]["descripcion"]
+    assert directos["seedance-2.0"]["destacado"] is False
+    hf = {m["id"]: m for lista in c.values() for m in lista if m["proveedor"] == "higgsfield"}
+    assert hf["hf:kling4_0"]["destacado"] is True      # está en DESTACADOS_HF
+    assert hf["hf:kling3_0"]["destacado"] is False
+    assert not any(m["nuevo"] for m in hf.values())    # el catálogo real no trae el dato: no se inventa
+
+
+def test_costo_imagen_depende_del_tamano():
+    cuadrada = catalogo.costo("imagen", "gpt-image-2", formato="1:1", calidad="medium")
+    vertical = catalogo.costo("imagen", "gpt-image-2", formato="2:3", calidad="medium")
+    horizontal = catalogo.costo("imagen", "gpt-image-2", formato="3:2", calidad="medium")
+    assert cuadrada["usd"] == pytest.approx(0.042) and "1024x1024" in cuadrada["detalle"]
+    assert vertical["usd"] == horizontal["usd"] == pytest.approx(0.063)
+    assert "1024x1536" in vertical["detalle"] and "1536x1024" in horizontal["detalle"]
+    for calidad, esperado in {"low": 0.016, "high": 0.25}.items():
+        assert catalogo.costo("imagen", "gpt-image-2", formato="3:2", calidad=calidad)["usd"] == pytest.approx(esperado)
+    assert catalogo.costo("imagen", "gpt-image-2", formato="2:3", calidad="high", variantes=2)["usd"] == pytest.approx(0.5)
+    assert catalogo.costo("imagen", "gpt-image-2", calidad="low")["usd"] == pytest.approx(0.011)  # sin formato = cuadrada

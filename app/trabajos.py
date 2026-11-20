@@ -21,7 +21,7 @@ from pathlib import Path
 
 import requests
 
-from app import catalogo, config, db, prompts
+from app import catalogo, config, db, prompts, referencias as _refs
 from app.proveedores import ErrorProveedor, higgsfield, openai_img, seedance
 
 INTERVALO_REMOTO = 5      # segundos entre consultas a cada tarea remota
@@ -193,6 +193,12 @@ def validar(datos) -> dict:
         if len(refs) > MAX_REFERENCIAS:
             raise ErrorValidacion(f"Máximo {MAX_REFERENCIAS} referencias.")
         entradas["referencias"] = [_ruta_medio(r, "la referencia") for r in refs]
+        if modelo["proveedor"] != "seedance":
+            # Solo Seedance recibe video o audio de referencia (los demás reciben imágenes).
+            for r in entradas["referencias"]:
+                if _refs.tipo_de(r) not in (None, "imagen"):
+                    raise ErrorValidacion(f"{modelo['nombre']} solo acepta imágenes como referencia. "
+                                          "Usa una imagen (o el primer cuadro del video) o elige Seedance.")
 
     estilo = datos.get("estilo") or None
     camara = datos.get("camara") or None

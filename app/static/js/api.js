@@ -119,3 +119,6 @@ export async function generarConfirmando(cuerpo, enviar = api.generar) {
     throw e;
   }
 }
+
+// Descarga un enlace público a medios (gratis, no genera nada). Los errores los maneja quien llama.
+export const importarReferencia = (url) => pedir("POST", "/api/referencias/importar", { url }, { silencioso: true });
