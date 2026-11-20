@@ -11,3 +11,7 @@
 ## 19 nov 2026 · En el contenedor no hay httpx
 **Qué pasó:** `starlette.testclient` necesita httpx y no está (ni se puede instalar).
 **Regla para no repetirlo:** las pruebas de rutas levantan uvicorn en un subproceso en un puerto libre y pegan con `requests` (fixture `servidor` en `tests/conftest.py`). Los proveedores se prueban con servidores falsos de `http.server` (`tests/falsos.py`), nunca contra servicios reales: el fixture anula todas las llaves del `.env`.
+
+## 19 nov 2026 · Modelos de Higgsfield inventados
+**Qué pasó:** en `app/catalogo.py` puse a mano seis modelos de Higgsfield (kling-3.0, veo-3.1, nano-banana-pro, soul-2, seedream-5-lite, higgsfield-audio) con resoluciones, formatos y duraciones supuestas, y slugs adivinados para el MCP. El catálogo real de la cuenta (leído con el conector de solo lectura) tiene 26 modelos con otros ids (`kling4_0`, `cinematic_studio_video_4_0`, `soul_2`...) y otras opciones (`std`/`pro`, `2K`, `auto`, `1k`/`4k`). Además, el historial (`show_generations`) no trae prompts, así que "aprender prompts del historial" no servía.
+**Regla para no repetirlo:** no inventar modelos ni parámetros: leer el catálogo real (`models_list` / `models_get`) y cargarlo desde `data/presets/higgsfield_catalogo.json`. En la app el id es `"hf:" + id real` y al MCP se manda el id real tal cual. Probar con datos que imiten la respuesta real (sin prompts en el historial), no con lo que uno supone.

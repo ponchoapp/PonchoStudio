@@ -9,7 +9,7 @@ import requests
 
 from app import trabajos
 from app.proveedores import ErrorProveedor, higgsfield
-from tests.falsos import ESTADO, ManejadorMCP, arrancar
+from tests.falsos import ESTADO, ManejadorMCP, arrancar, escribir_catalogo
 
 
 @pytest.fixture
@@ -18,6 +18,7 @@ def hf(entorno):
     ESTADO.reiniciar()
     ESTADO.base = base
     c = entorno(HIGGSFIELD_MCP_URL=base + "/mcp")
+    escribir_catalogo(c.PRESETS)
     yield c
     servidor.shutdown()
 
@@ -52,43 +53,62 @@ def test_callback_con_state_malo(hf):
 def test_herramientas_y_estado(hf):
     conectar()
     nombres = [h["name"] for h in higgsfield.herramientas()]
-    assert "generate_video" in nombres and "get_balance" in nombres  # dos páginas de tools/list
+    assert "generate_video" in nombres and "show_generations" in nombres  # dos páginas de tools/list
     assert ESTADO.metodos[:2] == ["initialize", "notifications/initialized"]
     e = higgsfield.estado()
-    assert e["conectado"] is True and e["creditos"] == 1234.5
+    assert e["conectado"] is True and e["creditos"] == 6000
     assert e["cuenta"] == "poncho@ejemplo.com"
     assert not any(n.startswith("generate") for n, _ in ESTADO.llamadas)
 
 
-def test_aprender_solo_lee_y_no_duplica(hf):
+def test_aprender_solo_lee_cuenta_modelos_y_no_duplica(hf):
     conectar()
     r = higgsfield.aprender()
-    assert r == {"nuevos": 3, "total": 3}
+    assert r == {"nuevos": 1, "total": 1}  # el historial no trae prompts; solo search_presets
     llamadas = [n for n, _ in ESTADO.llamadas]
-    assert "list_history" in llamadas and "search_presets" in llamadas
+    assert "show_generations" in llamadas and "models_list" in llamadas and "search_presets" in llamadas
     assert not any(n.startswith("generate") for n in llamadas)
-    assert "get_job_secret" not in llamadas  # pide un id que no tenemos
+    assert "workspace_select" not in llamadas  # no es de lectura
+    assert "models_get" not in llamadas        # pide un id que no tenemos
     args = dict(ESTADO.llamadas)
-    assert args["list_history"] == {"limit": 20} and args["search_presets"] == {"query": "cinematic"}
-    guardados = json.loads((hf.PRESETS / "aprendidos.json").read_text())
-    assert all(p["origen"] == "higgsfield" for p in guardados)
-    astronauta = next(p for p in guardados if "astronaut" in p["prompt"])
-    assert astronauta["categoria"] == "video" and astronauta["modelo_sugerido"] == "kling_3_0"
-    zoom = next(p for p in guardados if p["nombre"] == "Crash zoom")
-    assert zoom["categoria"] == "video"
-    assert higgsfield.aprender() == {"nuevos": 0, "total": 3}
+    assert args["show_generations"] == {"limit": 20} and args["search_presets"] == {"query": "cinematic"}
+    archivo = json.loads((hf.PRESETS / "aprendidos.json").read_text())
+    assert archivo["plantillas"][0]["nombre"] == "Crash zoom"
+    assert archivo["plantillas"][0]["origen"] == "higgsfield"
+    assert archivo["plantillas"][0]["categoria"] == "video"
+    usados = archivo["modelos_usados"]
+    assert usados[0] == {"modelo": "seedance_2_5", "app_id": None, "nombre": "seedance_2_5", "usos": 2}
+    assert usados[1] == {"modelo": "kling3_0", "app_id": "hf:kling3_0", "nombre": "Kling 3.0", "usos": 1}
+    assert higgsfield.aprender() == {"nuevos": 0, "total": 1}
+    # /api/presets sigue viendo las plantillas aprendidas
+    from app import prompts
+    assert any(p["nombre"] == "Crash zoom" for p in prompts.presets()["plantillas"])
 
 
-def test_generar_via_mcp_elige_herramienta(hf):
+def test_aprender_lee_formato_viejo_en_lista(hf):
+    hf.PRESETS.mkdir(parents=True, exist_ok=True)
+    (hf.PRESETS / "aprendidos.json").write_text("[]")
     conectar()
-    r = higgsfield.generar_via_mcp("kling-3.0", "a cat", {"formato": "9:16", "duracion": 5})
+    assert higgsfield.aprender()["total"] == 1
+
+
+def test_generar_via_mcp_pasa_id_real(hf):
+    conectar()
+    entradas = {"primer_cuadro": "https://cdn.ejemplo.com/a.png", "ultimo_cuadro": "/medios/local.png",
+                "referencias": ["https://cdn.ejemplo.com/r.png"]}
+    r = higgsfield.generar_via_mcp("hf:kling4_0", "a cat",
+                                   {"formato": "9:16", "duracion": 5, "resolucion": "1080p"}, entradas)
     assert r["herramienta"] == "generate_video"
     assert r["url"].endswith("/media/video.mp4")
-    nombre, args = ESTADO.llamadas[-1]
-    assert args == {"prompt": "a cat", "model": "kling_3_0", "aspect_ratio": "9:16", "duration": 5}
-    r = higgsfield.generar_via_mcp("nano-banana-pro", "a cat", {"formato": "1:1"})
+    _, args = ESTADO.llamadas[-1]
+    assert args == {"model": "kling4_0", "prompt": "a cat", "aspect_ratio": "9:16", "duration": 5,
+                    "resolution": "1080p",
+                    "medias": [{"role": "start_image", "url": "https://cdn.ejemplo.com/a.png"},
+                               {"role": "image_references", "url": "https://cdn.ejemplo.com/r.png"}]}
+    r = higgsfield.generar_via_mcp("hf:nano_banana_pro", "a cat", {"formato": "1:1", "resolucion": "2k"})
     assert r["herramienta"] == "generate_image"
-    assert ESTADO.llamadas[-1][1]["model"] == "nano_banana_pro"
+    assert ESTADO.llamadas[-1][1] == {"model": "nano_banana_pro", "prompt": "a cat", "aspect_ratio": "1:1",
+                                      "resolution": "2k"}
     assert r["id_remoto"] == "j2" and r["estado"] == "queued" and r["url"] is None
 
 
@@ -115,10 +135,10 @@ def test_desconectar(hf):
 
 def test_trabajo_higgsfield_completo(hf):
     conectar()
-    spec = trabajos.validar({"tipo": "video", "modelo": "kling-3.0", "prompt": "a cat",
+    spec = trabajos.validar({"tipo": "video", "modelo": "hf:kling4_0", "prompt": "a cat",
                              "ajustes": {"formato": "16:9", "duracion": 5}, "confirmar_creditos": True})
     t = trabajos.crear(spec)[0]
-    assert t["demo"] is False
+    assert t["demo"] is False and t["ajustes"]["resolucion"] == "720p"
     fin = time.time() + 15
     while time.time() < fin:
         trabajos.tic()

@@ -14,7 +14,7 @@ import requests
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from tests.falsos import puerto_libre  # noqa: E402
+from tests.falsos import escribir_catalogo, puerto_libre  # noqa: E402
 
 MUERTO = "http://127.0.0.1:9"  # nada escucha aquí: conexión rechazada al instante
 
@@ -65,6 +65,7 @@ def entorno(tmp_path, monkeypatch):
 def servidor(tmp_path_factory):
     """Levanta uvicorn en un puerto libre y devuelve la URL base."""
     datos = tmp_path_factory.mktemp("srv") / "data"
+    escribir_catalogo(datos / "presets")
     puerto = puerto_libre()
     env = dict(os.environ, **variables_base(datos), PUERTO=str(puerto))
     proceso = subprocess.Popen(

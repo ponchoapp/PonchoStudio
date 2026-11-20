@@ -316,36 +316,34 @@ export function tarjetaMedio(t, { onAbrir, demo = false } = {}) {
     const ar = proporcion(t.ajustes && t.ajustes.formato, r.ancho, r.alto);
     const caja = el("div", { class: "medio-caja", style: { "--ar": ar } });
     const esDemo = demo || t.demo === true || t.proveedor === "demo";
-    if (t.estado === "listo" && r.url) {
-      if (t.tipo === "video") {
-        const poster = r.miniatura || null;
-        const v = el("video", { muted: true, loop: true, playsInline: true, preload: poster ? "none" : "metadata", poster, src: r.url, "aria-hidden": "true", tabIndex: -1 });
-        v.muted = true;
-        caja.append(v);
-        const jugar = () => { v.play().catch(() => {}); };
-        const parar = () => { v.pause(); };
-        tarjeta.onmouseenter = jugar; tarjeta.onfocus = jugar;
-        tarjeta.onmouseleave = parar; tarjeta.onblur = parar;
-        if (t.ajustes && t.ajustes.duracion) caja.append(el("span", { class: "insignia medio-duracion" }, `${t.ajustes.duracion} s`));
-      } else {
-        caja.append(el("img", { src: r.miniatura || r.url, alt: t.prompt ? t.prompt.slice(0, 120) : "Imagen generada", loading: "lazy" }));
-      }
-    } else {
+    const sinPreview = (texto, clase = "") => {
       caja.classList.add("sin-medio");
-    }
-    if (t.estado === "listo" && r.url) {
-      /* ya pintado */
+      return el("div", { class: `medio-pendiente ${clase}` }, ...texto);
+    };
+    if (t.estado === "listo" && r.url && t.tipo === "video") {
+      const poster = r.miniatura || null;
+      const v = el("video", { muted: true, loop: true, playsInline: true, preload: poster ? "none" : "metadata", poster, src: r.url, "aria-hidden": "true", tabIndex: -1 });
+      v.muted = true;
+      caja.append(v);
+      const jugar = () => { v.play().catch(() => {}); };
+      const parar = () => { v.pause(); };
+      tarjeta.onmouseenter = jugar; tarjeta.onfocus = jugar;
+      tarjeta.onmouseleave = parar; tarjeta.onblur = parar;
+      if (t.ajustes && t.ajustes.duracion) caja.append(el("span", { class: "insignia medio-duracion" }, `${t.ajustes.duracion} s`));
+    } else if (t.estado === "listo" && (r.url || r.miniatura)) {
+      // Imagen lista, o trabajo listo sin archivo (demo) que solo trae miniatura.
+      caja.append(el("img", { src: r.miniatura || r.url, alt: t.prompt ? t.prompt.slice(0, 120) : "Vista previa", loading: "lazy" }));
+    } else if (t.estado === "listo") {
+      caja.append(sinPreview([el("strong", {}, "Listo"), el("span", {}, t.nota || "Sin vista previa.")]));
     } else if (t.estado === "fallo" || t.estado === "cancelado") {
-      caja.append(el("div", { class: "medio-pendiente medio-fallo" },
-        el("strong", {}, t.estado === "fallo" ? "No se pudo generar" : "Cancelado"),
-        t.error ? el("span", {}, t.error) : null));
+      caja.append(sinPreview([el("strong", {}, t.estado === "fallo" ? "No se pudo generar" : "Cancelado"), t.error ? el("span", {}, t.error) : null], "medio-fallo"));
     } else {
       const p = Math.max(0, Math.min(100, t.progreso || 0));
       caja.style.background = arte(t.id);
-      caja.append(el("div", { class: "medio-pendiente" },
+      caja.append(sinPreview([
         el("span", { class: "porc" }, `${p}%`),
         el("div", { class: "progreso", role: "progressbar", "aria-valuenow": p, "aria-valuemin": 0, "aria-valuemax": 100, "aria-label": "Progreso" }, el("i", { style: { "--v": `${p}%` } })),
-        el("span", {}, t.estado === "en_cola" ? "En cola" : "Generando…")));
+        el("span", {}, t.estado === "en_cola" ? "En cola" : "Generando…")]));
     }
     const sup = el("div", { class: "medio-sup" },
       t.estado !== "listo" ? chipEstado(t.estado, t.progreso) : null,
@@ -368,6 +366,8 @@ export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
     medio.append(t.tipo === "video"
       ? el("video", { src: r.url, controls: true, autoplay: true, loop: true, playsInline: true, poster: r.miniatura || null })
       : el("img", { src: r.url, alt: t.prompt || "Imagen generada" }));
+  } else if (t.estado === "listo" && r.miniatura) {
+    medio.append(el("img", { src: r.miniatura, alt: t.prompt || "Vista previa" }));
   } else {
     medio.style.background = arte(t.id);
     medio.append(el("div", { class: "medio-pendiente", style: { position: "static", background: "transparent" } },
@@ -394,6 +394,7 @@ export function abrirVisor(t, { onFavorito, onRepetir, onBorrar, demo }) {
   const info = el("div", { class: "visor-info" },
     el("div", { class: "chips" }, chipEstado(t.estado, t.progreso), demo || t.demo || t.proveedor === "demo" ? insigniaDemo() : null),
     el("div", { class: "visor-prompt" }, t.prompt || "Sin prompt"),
+    t.nota ? el("p", { class: "nota" }, t.nota) : null,
     el("dl", { class: "visor-datos" }, datos.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
     el("div", { class: "visor-acciones" }, descargar, btnRepetir, btnFav, btnCopiar, btnBorrar));
   const cerrar = modal([cerrarBtn, medio, info], { clase: "visor", etiqueta: "Visor de trabajo" });

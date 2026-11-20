@@ -26,7 +26,7 @@ PROTOCOLO = "2025-06-18"
 TIEMPO = 60
 TIEMPO_CORTO = 15
 
-PALABRAS_LECTURA = ("list", "get", "history", "balance", "models", "search")
+PALABRAS_LECTURA = ("list", "get", "history", "balance", "models", "search", "show")
 PALABRAS_ESCRITURA = ("generate", "create", "delete", "remove", "update", "upload", "edit",
                       "cancel", "submit", "run", "start", "buy", "purchase", "write", "set_", "post")
 EXTENSIONES_MEDIO = ("mp4", "mov", "webm", "png", "jpg", "jpeg", "webp", "gif", "mp3", "wav", "m4a", "ogg")
@@ -549,22 +549,38 @@ def _ruta_aprendidos() -> Path:
     return config.cfg.PRESETS / "aprendidos.json"
 
 
-def _leer_aprendidos() -> list[dict]:
+def _leer_archivo_aprendidos() -> dict:
+    """Acepta el formato viejo (lista de plantillas) y el nuevo (objeto)."""
+    vacio = {"plantillas": [], "modelos_usados": []}
     ruta = _ruta_aprendidos()
     if not ruta.is_file():
-        return []
+        return vacio
     try:
         datos = json.loads(ruta.read_text(encoding="utf-8"))
     except (ValueError, OSError):
-        return []
-    if isinstance(datos, dict):
-        datos = datos.get("plantillas") or []
-    return [d for d in datos if isinstance(d, dict)] if isinstance(datos, list) else []
+        return vacio
+    if isinstance(datos, list):
+        return {"plantillas": [d for d in datos if isinstance(d, dict)], "modelos_usados": []}
+    if not isinstance(datos, dict):
+        return vacio
+    plantillas = datos.get("plantillas") if isinstance(datos.get("plantillas"), list) else []
+    usados = datos.get("modelos_usados") if isinstance(datos.get("modelos_usados"), list) else []
+    return {"plantillas": [d for d in plantillas if isinstance(d, dict)],
+            "modelos_usados": [u for u in usados if isinstance(u, dict) and u.get("modelo")]}
 
 
-def guardar_aprendidos(nuevas: list[dict]) -> dict:
-    """Mezcla sin duplicados (por texto del prompt) y escribe data/presets/aprendidos.json."""
-    existentes = _leer_aprendidos()
+def _leer_aprendidos() -> list[dict]:
+    return _leer_archivo_aprendidos()["plantillas"]
+
+
+def guardar_aprendidos(nuevas: list[dict], usos: dict[str, int] | None = None) -> dict:
+    """Mezcla plantillas sin duplicados (por texto) y actualiza los modelos más usados.
+
+    Escribe data/presets/aprendidos.json como
+    {"actualizado", "plantillas": [Plantilla], "modelos_usados": [{"modelo", "app_id", "nombre", "usos"}]}.
+    """
+    archivo = _leer_archivo_aprendidos()
+    existentes = archivo["plantillas"]
     vistos = {_normalizar(p.get("prompt", "")) for p in existentes}
     agregados = 0
     for p in nuevas:
@@ -574,17 +590,49 @@ def guardar_aprendidos(nuevas: list[dict]) -> dict:
         vistos.add(clave)
         existentes.append(p)
         agregados += 1
+    usados = archivo["modelos_usados"]
+    if usos:  # el historial manda: se reemplaza el conteo con lo último leído
+        nombres = {m["_hf_id"]: m for lista in catalogo.modelos_higgsfield().values() for m in lista}
+        usados = []
+        for real, n in sorted(usos.items(), key=lambda x: (-x[1], x[0])):
+            info = nombres.get(real)
+            usados.append({"modelo": real, "app_id": info["id"] if info else None,
+                           "nombre": info["nombre"] if info else real, "usos": n})
+    salida = {"actualizado": time.strftime("%Y-%m-%dT%H:%M:%S"), "plantillas": existentes,
+              "modelos_usados": usados}
     ruta = _ruta_aprendidos()
     ruta.parent.mkdir(parents=True, exist_ok=True)
     temporal = ruta.with_suffix(".tmp")
-    temporal.write_text(json.dumps(existentes, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporal.write_text(json.dumps(salida, ensure_ascii=False, indent=2), encoding="utf-8")
     temporal.replace(ruta)
     return {"nuevos": agregados, "total": len(existentes)}
 
 
+def _contar_modelos(obj, usos: dict[str, int]) -> None:
+    """Cuenta generaciones por modelo. El historial trae id, job_set_type, url y fecha (sin prompt)."""
+    if isinstance(obj, dict):
+        modelo = obj.get("job_set_type")
+        if not isinstance(modelo, str) and any(k in obj for k in ("url", "result", "results", "status",
+                                                                  "created_at")):
+            modelo = obj.get("model") if isinstance(obj.get("model"), str) else None
+        if isinstance(modelo, str) and modelo.strip():
+            usos[modelo.strip()] = usos.get(modelo.strip(), 0) + 1
+        for valor in obj.values():
+            if isinstance(valor, (dict, list)):
+                _contar_modelos(valor, usos)
+    elif isinstance(obj, list):
+        for item in obj:
+            _contar_modelos(item, usos)
+
+
 def aprender() -> dict:
-    """Lee historial/modelos/presets con herramientas de lectura. Nunca genera."""
+    """Lee historial/modelos/presets con herramientas de lectura. Nunca genera.
+
+    Si una herramienta trae prompts, se guardan como plantillas. El historial de Higgsfield
+    (show_generations) no trae prompts: de ahí solo se cuentan los modelos más usados.
+    """
     encontrados: list[dict] = []
+    usos: dict[str, int] = {}
     for herramienta in herramientas(forzar=True):
         nombre = herramienta.get("name", "")
         if not es_lectura(nombre):
@@ -597,9 +645,12 @@ def aprender() -> dict:
         except ErrorProveedor:
             continue
         datos = datos_resultado(resultado)
-        if datos is not None:
-            _extraer_prompts(datos, encontrados)
-    return guardar_aprendidos(encontrados)
+        if datos is None:
+            continue
+        _extraer_prompts(datos, encontrados)
+        if any(p in nombre.lower() for p in ("generation", "history", "show")):
+            _contar_modelos(datos, usos)
+    return guardar_aprendidos(encontrados, usos)
 
 
 # ---------------------------------------------------------------- estado
@@ -661,7 +712,7 @@ def estado() -> dict:
             continue
         quiere_creditos = salida["creditos"] is None and ("balance" in nombre or "credit" in nombre)
         quiere_cuenta = salida["cuenta"] is None and (nombre in ("me", "whoami") or any(
-            p in nombre for p in ("account", "profile", "user")))
+            p in nombre for p in ("account", "profile", "user", "workspace")))
         if not (quiere_creditos or quiere_cuenta):
             continue
         try:
@@ -697,7 +748,6 @@ def _puntaje(herramienta: dict, tipo: str, claves: list[str]) -> int:
     nombre = _plano(herramienta.get("name", ""))
     desc = _plano(herramienta.get("description", ""))
     props = (herramienta.get("inputSchema") or {}).get("properties") or {}
-    enums = " ".join(_plano(" ".join(map(str, p.get("enum") or []))) for p in props.values() if isinstance(p, dict))
     puntos = 0
     for palabra in PALABRAS_TIPO[tipo]:
         if palabra in nombre:
@@ -707,27 +757,35 @@ def _puntaje(herramienta: dict, tipo: str, claves: list[str]) -> int:
     for otro, palabras in PALABRAS_TIPO.items():
         if otro != tipo and any(p in nombre for p in palabras):
             puntos -= 2
+    crudo = " ".join(" ".join(map(str, p.get("enum") or [])) for p in props.values() if isinstance(p, dict))
     for clave in claves:
-        if clave in (nombre + " " + desc + " " + enums).split():
+        if clave in crudo.split() or clave in (herramienta.get("description") or ""):
             puntos += 2
+    if any(n in props for n in ("model", "model_id")):
+        puntos += 1
     return puntos
 
 
-def _elegir_enum(opciones: list, claves: list[str]):
-    mejor, mejor_puntos = None, 0
-    for opcion in opciones:
-        palabras = _plano(opcion).split()
-        puntos = sum(1 for c in claves if c in palabras or any(p.startswith(c) for p in palabras))
-        if puntos > mejor_puntos:
-            mejor, mejor_puntos = opcion, puntos
-    return mejor
+def _medias(prop: dict, entradas: dict) -> list[dict]:
+    """medias con roles start_image / end_image / image_references (solo URLs públicas)."""
+    item = (prop.get("items") or {}).get("properties") or {}
+    campo_url = next((k for k in ("url", "media_url", "image_url", "uri") if k in item), "url")
+    campo_rol = next((k for k in ("role", "type", "kind") if k in item), "role")
+    salida = []
+    pares = [("start_image", (entradas or {}).get("primer_cuadro")),
+             ("end_image", (entradas or {}).get("ultimo_cuadro"))]
+    pares += [("image_references", r) for r in (entradas or {}).get("referencias") or []]
+    for rol, ruta in pares:
+        if isinstance(ruta, str) and ruta.startswith(("http://", "https://")):
+            salida.append({campo_rol: rol, campo_url: ruta})
+    return salida
 
 
 def _armar_args(herramienta: dict, modelo: dict, prompt: str, ajustes: dict, entradas: dict) -> dict:
     esquema = herramienta.get("inputSchema") or {}
     props = esquema.get("properties") or {}
     requeridos = esquema.get("required") or []
-    claves = modelo.get("_mcp") or []
+    real = modelo.get("_hf_id") or modelo["id"]
     args: dict = {}
     for nombre, prop in props.items():
         prop = prop or {}
@@ -737,7 +795,10 @@ def _armar_args(herramienta: dict, modelo: dict, prompt: str, ajustes: dict, ent
         if "prompt" in n and "negative" not in n:
             valor = prompt
         elif n in ("model", "model_id", "model_name", "job_set_type", "engine"):
-            valor = _elegir_enum(enum, claves) if enum else modelo["id"].replace("-", "_").replace(".", "_")
+            valor = real  # id real de Higgsfield, sin "hf:"
+            enum = None   # el id real manda aunque el esquema traiga otra lista
+        elif n in ("medias", "media", "inputs", "input_media"):
+            valor = _medias(prop, entradas) or None
         elif n in ("aspect_ratio", "ratio", "aspect", "format"):
             valor = ajustes.get("formato")
         elif n in ("duration", "seconds", "length", "duration_seconds"):
@@ -833,7 +894,7 @@ def generar_via_mcp(modelo_id: str, prompt: str, ajustes: dict, entradas: dict |
                   if any(p in (h.get("name") or "").lower() for p in ("generate", "create"))]
     if not candidatas:
         raise ErrorProveedor("Higgsfield no ofrece herramientas para generar.")
-    claves = [c.lower() for c in modelo.get("_mcp") or []]
+    claves = [modelo.get("_hf_id") or modelo["id"]]
     puntuadas = sorted(candidatas, key=lambda h: _puntaje(h, tipo, claves), reverse=True)
     elegida = puntuadas[0]
     if _puntaje(elegida, tipo, claves) <= 0:

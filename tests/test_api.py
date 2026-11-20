@@ -36,10 +36,11 @@ def test_catalogo_y_costo(servidor):
     b = servidor["base"]
     c = requests.get(b + "/api/catalogo").json()
     assert any(m["id"] == "seedance-2.5" for m in c["video"])
+    assert any(m["id"] == "hf:kling4_0" for m in c["video"])
     r = requests.post(b + "/api/costo", json={"tipo": "video", "modelo": "seedance-2.5", "resolucion": "480p",
                                                "formato": "16:9", "duracion": 5, "variantes": 1})
     assert r.status_code == 200 and abs(r.json()["usd"] - 0.514) < 0.001
-    r = requests.post(b + "/api/costo", json={"tipo": "video", "modelo": "veo-3.1"})
+    r = requests.post(b + "/api/costo", json={"tipo": "video", "modelo": "hf:kling4_0"})
     assert r.json()["usd"] is None and "creditos" in r.json()
     r = requests.post(b + "/api/costo", json={"tipo": "video", "modelo": "nada"})
     assert r.status_code == 400 and "error" in r.json()
@@ -71,7 +72,7 @@ def test_generar_valida(servidor):
 
 def test_higgsfield_pide_confirmacion(servidor):
     r = requests.post(servidor["base"] + "/api/generar",
-                      json={"tipo": "video", "modelo": "kling-3.0", "prompt": "un perro"})
+                      json={"tipo": "video", "modelo": "hf:kling4_0", "prompt": "un perro"})
     assert r.status_code == 409
     d = r.json()
     assert d["pide_confirmacion"] is True and d["creditos"] is None and d["error"]

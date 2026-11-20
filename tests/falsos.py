@@ -45,26 +45,33 @@ class Base(BaseHTTPRequestHandler):
 
 # ---------------------------------------------------------------- Higgsfield falso
 
+# Imita las herramientas del MCP oficial de Higgsfield (lectura) + las de generar.
 HERRAMIENTAS = [
-    {"name": "get_balance", "description": "Credits balance", "inputSchema": {"type": "object", "properties": {}}},
-    {"name": "get_account", "description": "Account info", "inputSchema": {"type": "object", "properties": {}}},
-    {"name": "list_history", "description": "Generation history",
+    {"name": "balance", "description": "Credits balance", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "list_workspaces", "description": "Workspaces", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "workspace_select", "description": "Select a workspace",
+     "inputSchema": {"type": "object", "properties": {"workspace_id": {"type": "string"}},
+                     "required": ["workspace_id"]}},
+    {"name": "models_list", "description": "Available models", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "models_get", "description": "Model parameters",
+     "inputSchema": {"type": "object", "properties": {"model_id": {"type": "string"}}, "required": ["model_id"]}},
+    {"name": "show_generations", "description": "Browse existing results",
      "inputSchema": {"type": "object", "properties": {"limit": {"type": "integer", "maximum": 20}}}},
     {"name": "search_presets", "description": "Search presets",
      "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
-    {"name": "get_job_secret", "description": "Needs an id I can't fill",
-     "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}}, "required": ["job_id"]}},
-    {"name": "generate_video", "description": "Generate a video with Kling, Veo or Seedance",
+    {"name": "generate_video", "description": "Generate a video with any Higgsfield video model",
      "inputSchema": {"type": "object", "properties": {
-         "prompt": {"type": "string"},
-         "model": {"type": "string", "enum": ["kling_3_0", "veo_3_1", "seedance_2_5"]},
-         "aspect_ratio": {"type": "string", "enum": ["16:9", "9:16", "1:1"]},
-         "duration": {"type": "integer"}}, "required": ["prompt", "model"]}},
+         "model": {"type": "string"}, "prompt": {"type": "string"},
+         "aspect_ratio": {"type": "string"}, "duration": {"type": "integer"},
+         "resolution": {"type": "string"},
+         "medias": {"type": "array", "items": {"type": "object", "properties": {
+             "role": {"type": "string", "enum": ["start_image", "end_image", "image_references"]},
+             "url": {"type": "string"}}}}},
+         "required": ["model", "prompt"]}},
     {"name": "generate_image", "description": "Generate an image",
      "inputSchema": {"type": "object", "properties": {
-         "prompt": {"type": "string"},
-         "model": {"type": "string", "enum": ["nano_banana_pro", "soul_v2", "seedream_v5_lite"]}},
-         "required": ["prompt"]}},
+         "model": {"type": "string"}, "prompt": {"type": "string"}, "aspect_ratio": {"type": "string"},
+         "resolution": {"type": "string"}}, "required": ["model", "prompt"]}},
 ]
 
 
@@ -208,17 +215,21 @@ class ManejadorMCP(Base):
         e = ESTADO
         def texto(obj):
             return {"content": [{"type": "text", "text": json.dumps(obj)}]}
-        if nombre == "get_balance":
-            return texto({"credits": 1234.5})
-        if nombre == "get_account":
-            return texto({"user": {"email": "poncho@ejemplo.com"}})
-        if nombre == "list_history":
-            return texto({"items": [
-                {"id": 1, "prompt": "A lone astronaut walks across red dunes at dusk, slow dolly",
-                 "model": "kling_3_0", "duration": 5},
-                {"id": 2, "prompt": "Portrait of a woman in neon rain, 85mm lens, bokeh", "model": "soul_v2"},
-                {"id": 3, "prompt": "A lone astronaut walks across red dunes at dusk, slow dolly"},
-                {"id": 4, "prompt": "corto"},
+        if nombre == "balance":
+            return texto({"credits": 6000, "plan": "creator"})
+        if nombre == "list_workspaces":
+            return texto({"workspaces": [{"id": "w1", "name": "Poncho", "email": "poncho@ejemplo.com"}]})
+        if nombre == "models_list":
+            return texto({"models": [{"id": "kling4_0", "type": "video"}, {"id": "soul_2", "type": "image"}]})
+        if nombre == "show_generations":
+            # Igual que el real: sin prompts, solo id, job_set_type, url y fecha
+            return texto({"generations": [
+                {"id": "g1", "job_set_type": "seedance_2_5", "url": e.base + "/media/a.mp4",
+                 "created_at": "2026-11-01"},
+                {"id": "g2", "job_set_type": "seedance_2_5", "url": e.base + "/media/b.mp4",
+                 "created_at": "2026-11-02"},
+                {"id": "g3", "job_set_type": "kling3_0", "url": e.base + "/media/c.mp4",
+                 "created_at": "2026-11-03"},
             ]})
         if nombre == "search_presets":
             return {"content": [{"type": "text", "text": "texto que no es JSON"}],
@@ -323,3 +334,21 @@ class ManejadorOllama(Base):
         self._json(200, {"model": datos["model"], "message": {"role": "assistant", "content":
                          "<think>pensando...</think>\nPrompt: \"A golden retriever runs on a beach, "
                          "tracking shot, golden hour light, 50mm lens, waves crashing.\""}})
+
+
+CATALOGO_HF = {"modelos": [
+    {"id": "kling4_0", "nombre": "Kling 4.0", "tipo": "video", "resoluciones": ["720p", "1080p"],
+     "formatos": ["21:9", "16:9", "9:16", "1:1", "auto"], "duracion": {"min": 3, "max": 30}, "audio": True},
+    {"id": "kling3_0", "nombre": "Kling 3.0", "tipo": "video", "resoluciones": ["std", "pro", "4k"],
+     "formatos": ["16:9", "9:16", "1:1"], "duracion": {"min": 3, "max": 15}, "audio": True},
+    {"id": "nano_banana_pro", "nombre": "Nano Banana Pro", "tipo": "imagen", "resoluciones": ["1k", "2k", "4k"],
+     "formatos": ["1:1", "16:9", "9:16", "4:5", "21:9"]},
+    {"id": "elevenlabs_v4", "nombre": "ElevenLabs v4", "tipo": "audio", "resoluciones": [], "formatos": []},
+    {"id": "malo"},
+]}
+
+
+def escribir_catalogo(carpeta_presets, datos=None):
+    import json as _json
+    carpeta_presets.mkdir(parents=True, exist_ok=True)
+    (carpeta_presets / "higgsfield_catalogo.json").write_text(_json.dumps(datos or CATALOGO_HF))
