@@ -2,7 +2,7 @@
 
 Archivo que resume TODA la conversación y las decisiones. Se actualiza en cada avance.
 Si la conversación se compacta o se empieza una nueva sesión, leer esto primero.
-Última actualización: 19 nov 2026, 21:20 (hora Colombia).
+Última actualización: 19 nov 2026, 22:40 (hora Colombia).
 
 ## 1. Qué pidió Poncho (sus palabras, resumidas)
 - Una app nueva para crear videos e imágenes **con interfaz como Higgsfield** (inicio/explorar, imagen, video,
@@ -220,6 +220,31 @@ Usar las skills de diseño que instaló (frontend-design, impeccable, ui-ux-pro-
 - **Falta probar de verdad**: una generación 480p 4 s con Seedance 2.5 Flash (~US$0,10) con un video de referencia para
   confirmar los roles `reference_video`/`reference_audio` y que ModelArk acepte el enlace de CloudFront de Higgsfield.
   Si lo rechaza: usar `cuadro` (primer cuadro) como `reference_image`. Pedir permiso a Poncho antes de gastar.
+
+## 5g. v0.2.0 cerrada (19 nov, 22:40) — rediseño con 3 agentes
+- Poncho pidió: rediseño con skills (impeccable, ui-ux-pro-max, web-design-guidelines, frontend-design), un agente por
+  vista, capturas antes/después, logo nuevo, Explorar como la home de Higgsfield, referencia que no se pierde, panel y
+  selector de modelos como Higgsfield, centro vacío con presets. Commit y push por vista. Se fue y dijo "hazlo todo".
+- Hecho y subido (tag `v0.2.0`): todo lo de arriba. Capturas: `docs/capturas/antes/` y `docs/capturas/despues/`.
+- **Logo elegido: B · P de play** (`app/static/logo.svg`; propuestas en `docs/logos/`).
+- Skills: `impeccable` enlazada en `.claude/skills` (junction a `.agents/skills`); NO correr su launcher (descarga un
+  binario). `frontend-design` instalado como plugin del proyecto (`.claude/settings.json`), carga al reiniciar.
+  `design-taste-frontend` sin usar (salió "Critical Risk").
+- Archivos por dueño: `css/explorar.css`, `css/generador.css`, `css/vistas.css`; `js/tarjetas.js` compartido con el
+  contrato de la referencia (localStorage `ponchostudio.referencia.video|imagen` y `.importada.<tipo>`).
+- Miniaturas de 44 plantillas: **US$0,484 gastados** en OpenAI (autorizado), cuadradas 1024 y pasadas a WebP 640 px.
+  3 traen logos de marcas reales (AXE, Dior, Kiehl's) y 2 salieron como storyboard: rehacerlas cuesta ~US$0,011 c/u
+  (pedir permiso).
+- Probado de punta a punta en una copia sin llaves: Recrear → tarjeta de referencia → importada a /medios → sigue al
+  cambiar de vista → `entradas.referencias` con el .mp4. Sin errores de consola en las 7 vistas.
+- Pendientes:
+  - Prueba real ~US$0,10 (Seedance 2.5 Flash 480p 4 s con video de referencia) para confirmar `reference_video` y el
+    precio con video de entrada. **Pedir permiso.**
+  - Una prueba falló 1 vez de 10 corridas y no se repitió (sin identificar). Vigilar.
+  - Reglas viejas del generador en `estilos.css` (.barra-prompt, .sel-modelo, .btn-hoja, .pop-arriba) ya sin uso.
+  - Presets de "Producto y marketing" no traen descripción: Recrear carga solo el nombre como prompt.
+- Siguiente: **v0.3.0** = Seedream 5.5 (imagen con ARK_API_KEY; falta el Model ID exacto), OpenRouter como plan B de
+  Seedance (necesita OPENROUTER_API_KEY) y botón "Comparar".
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).

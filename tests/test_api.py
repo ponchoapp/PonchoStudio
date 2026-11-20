@@ -23,7 +23,8 @@ def esperar(base, tid, estado="listo", segundos=20):
 
 def test_salud(servidor):
     r = requests.get(servidor["base"] + "/api/salud").json()
-    assert r["version"] == "0.1.0"
+    from app import VERSION
+    assert r["version"] == VERSION
     assert r["demo"] is True
     p = r["proveedores"]
     assert p["seedance"] == {"listo": False, "motivo": p["seedance"]["motivo"]}

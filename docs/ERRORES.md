@@ -86,3 +86,13 @@ color saturado. Mostrar capturas a Poncho antes de dar una interfaz por terminad
 ## 19 nov 2026 · Dos sesiones de Claude subiendo a main a la vez
 **Qué pasó:** la sesión de la nube siguió subiendo commits (rediseño, referencias) mientras Claude Code trabajaba; dos pushes fueron rechazados y hubo conflictos en MEMORIA/ERRORES.
 **Regla para no repetirlo:** una sola sesión escribe código a la vez. La otra solo deja notas en MEMORIA. Antes de empezar, `git fetch` y leer lo nuevo.
+
+## 19 nov 2026 · Lecciones de los agentes del rediseño
+- **Grid que se ensancha en celular:** un hijo de `grid` sin `minmax(0,1fr)` crece con contenido `nowrap`; con
+  `mobile:true` el navegador agranda el viewport (414 en vez de 390) y los modales quedan corridos. Regla: en vistas,
+  `grid-template-columns: minmax(0,1fr)` y medir `scrollWidth` también con el modal abierto.
+- **Scripts CDP:** `const a` repetido en dos `Runtime.evaluate` del mismo contexto da SyntaxError silencioso. Usar `var`
+  o envolver cada evaluación en una función.
+- **Rutas de Windows en heredocs:** las `\` se pierden. En scripts de prueba usar `/`.
+- **Copia de prueba con el token de Higgsfield:** `/api/salud` dice `demo:false` aunque Seedance/OpenAI no tengan llave.
+  Antes de generar en una copia, revisar que el proveedor del modelo NO esté listo (`proveedores.<x>.listo == false`).
