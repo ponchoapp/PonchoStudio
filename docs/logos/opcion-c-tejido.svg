@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PonchoStudio">
+  <!-- C · Tejido: rombo escalonado de los tejidos andinos, con un lente al centro -->
+  <path fill="#B15CFF" d="M28 4h8v8h8v8h8v8h8v8h-8v8h-8v8h-8v8h-8v-8h-8v-8h-8v-8H4v-8h8v-8h8v-8h8Z"/>
+  <path fill="#0B0B0E" d="M28 16h8v8h8v16h-8v8h-8v-8h-8V24h8Z"/>
+  <circle cx="32" cy="32" r="6" fill="#D9B8FF"/>
+  <circle cx="34" cy="30" r="1.8" fill="#0B0B0E"/>
+</svg>

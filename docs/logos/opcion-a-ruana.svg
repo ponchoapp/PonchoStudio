@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PonchoStudio">
+  <!-- A · Ruana: silueta de poncho (rombo ancho con cuello en V) con un botón de reproducir -->
+  <defs>
+    <linearGradient id="a-g" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C98BFF"/><stop offset="1" stop-color="#8A44F0"/>
+    </linearGradient>
+    <mask id="a-m">
+      <rect width="64" height="64" fill="#fff"/>
+      <path d="M23 8h18l-9 12z" fill="#000"/>
+      <path d="M27 31v15l12-7.5z" fill="#000"/>
+    </mask>
+  </defs>
+  <path d="M32 8 61 36 32 60 3 36Z" fill="url(#a-g)" mask="url(#a-m)" stroke-linejoin="round"/>
+</svg>
