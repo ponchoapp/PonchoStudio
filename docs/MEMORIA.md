@@ -150,7 +150,7 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
       "Pegar mis llaves". Probada contra el backend real; capturas en `docs/capturas/`. Detalles en ERRORES.md.
 - [ ] Verificación en Windows: ABRIR.bat, revisar consola, demo, y generación real 480p 4 s con Seedance 2.5 Flash
       cuando Poncho tenga la llave. (Audio aún es solo informativo: no hay ruta para generar audio.)
-- [x] Versión **v0.1.0** cerrada (tag en GitHub).
+- [x] Versión **v0.1.0** cerrada. El tag existe en la copia del PC; la sesión en la nube no puede subir tags (proxy 403): Poncho corre `git push --tags` en Windows.
 
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
