@@ -19,3 +19,14 @@ skills-lock.json
 
 # Copia local de los presets de Higgsfield (se refresca sola cada 24 h)
 data/presets/higgsfield_presets.json
+.adal/
+.augment/
+.bob/
+.codebuddy/
+.codemaker/
+.codestudio/
+.commandcode/
+.continue/
+.hermes/
+.zcode/
+.zencoder/
