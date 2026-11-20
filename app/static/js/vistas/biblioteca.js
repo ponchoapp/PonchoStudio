@@ -101,14 +101,22 @@ export async function montar(raiz, ctx) {
     contador.textContent = lista.length ? `${lista.length} ${lista.length === 1 ? "trabajo" : "trabajos"}${siguiente ? " (hay más)" : ""}` : "";
     btnSeleccionar.hidden = !lista.length;
     const textos = {
-      todo: ["Tu biblioteca está vacía", "Lo que generes en Video o Imagen queda aquí.", "Crear un video", "#/video"],
-      video: ["Aún no hay videos", "Genera tu primer video con Seedance 2.5.", "Crear un video", "#/video"],
-      imagen: ["Aún no hay imágenes", "Genera tu primera imagen con gpt-image-2.", "Crear una imagen", "#/imagen"],
-      favoritos: ["Sin favoritos", "Abre un trabajo y toca «Favorito» para verlo aquí.", "Ver todo", "#/biblioteca"],
+      todo: ["Aquí van a vivir tus trabajos", "Todo lo que generes en Video o Imagen se guarda en este equipo y aparece en esta página."],
+      video: ["Todavía no hay videos", "Escribe una escena y Seedance 2.5 te la devuelve en video, con audio si quieres."],
+      imagen: ["Todavía no hay imágenes", "Describe una foto y gpt-image-2 te la devuelve. Puedes pedir varias variantes."],
+      favoritos: ["Sin favoritos todavía", "Abre un trabajo y toca «Favorito» para tenerlo siempre a la mano."],
     }[filtro];
-    limpiar(zonaVacia, lista.length ? null : el("div", { class: "vacio" },
-      el("strong", {}, textos[0]), el("span", {}, textos[1]),
-      el("a", { class: "btn", href: textos[3], onclick: filtro === "favoritos" ? (e) => { e.preventDefault(); filtro = "todo"; pintarFiltros(); cargar(true); } : null }, textos[2])));
+    const accionesVacio = filtro === "favoritos"
+      ? [el("button", { class: "btn btn-primario", type: "button", onclick: () => { filtro = "todo"; pintarFiltros(); cargar(true); } }, "Ver todos los trabajos")]
+      : [
+        filtro !== "imagen" ? el("a", { class: "btn btn-primario", href: "#/video" }, icono("video"), "Crear un video") : null,
+        filtro !== "video" ? el("a", { class: filtro === "imagen" ? "btn btn-primario" : "btn", href: "#/imagen" }, icono("imagen"), "Crear una imagen") : null,
+        filtro === "todo" ? el("a", { class: "btn btn-fantasma", href: "#/" }, "Ver ejemplos en Explorar") : null,
+      ];
+    limpiar(zonaVacia, lista.length ? null : el("div", { class: "vista-vacio" },
+      el("span", { class: "vista-vacio-marco", "aria-hidden": "true" }, icono(filtro === "imagen" ? "imagen" : filtro === "favoritos" ? "corazon" : "video")),
+      el("h2", {}, textos[0]), el("p", {}, textos[1]),
+      el("div", { class: "hero-acciones" }, accionesVacio)));
     pintarBarra();
   }
   btnMas.onclick = () => cargar(false);
@@ -117,11 +125,12 @@ export async function montar(raiz, ctx) {
   document.addEventListener("keydown", tecla);
 
   pintarFiltros();
-  raiz.append(el("div", { class: "pagina" },
-    el("div", { class: "seccion-cabeza" },
-      el("h1", {}, "Biblioteca"),
-      el("div", { class: "hero-acciones" }, contador, btnSeleccionar)),
-    el("div", { class: "seccion" }, grupo, zonaVacia, contenedor, el("div", {}, btnMas))),
+  raiz.append(el("div", { class: "pagina vista pagina-biblioteca" },
+    el("header", { class: "vista-cabeza" },
+      el("h1", { class: "vista-titulo" }, "Tus trabajos"),
+      el("p", { class: "vista-sub" }, "Videos e imágenes que has generado. Toca uno para verlo, repetirlo o descargarlo.")),
+    el("div", { class: "vista-barra" }, grupo, el("div", { class: "hero-acciones" }, contador, btnSeleccionar)),
+    el("div", { class: "seccion" }, zonaVacia, contenedor, el("div", { class: "mas-centro" }, btnMas))),
     barra);
   await cargar(true);
 
