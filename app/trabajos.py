@@ -91,6 +91,15 @@ def _ruta_medio(valor, nombre: str) -> str:
     return valor
 
 
+def _por_defecto(opciones: list, preferida: str):
+    """La preferida si existe; si no, la primera que no sea "auto"."""
+    if not opciones:
+        return None
+    if preferida in opciones:
+        return preferida
+    return next((o for o in opciones if o != "auto"), opciones[0])
+
+
 def validar(datos) -> dict:
     """Revisa el cuerpo de /api/generar y devuelve una especificación limpia."""
     if not isinstance(datos, dict):
@@ -113,11 +122,11 @@ def validar(datos) -> dict:
     ajustes: dict = {}
 
     if tipo == "video":
-        resoluciones = modelo["resoluciones"]
-        resolucion = ajustes_in.get("resolucion") or ("720p" if "720p" in resoluciones else resoluciones[0])
-        if resolucion not in resoluciones:
+        resoluciones = modelo.get("resoluciones") or []
+        resolucion = ajustes_in.get("resolucion") or _por_defecto(resoluciones, "720p")
+        if resoluciones and resolucion not in resoluciones:
             raise ErrorValidacion(f"{modelo['nombre']} no tiene {resolucion}. Usa {', '.join(resoluciones)}.")
-        formato = ajustes_in.get("formato") or modelo["formatos"][0]
+        formato = ajustes_in.get("formato") or _por_defecto(modelo["formatos"], "16:9")
         if formato not in modelo["formatos"]:
             raise ErrorValidacion(f"Formato {formato} no disponible en {modelo['nombre']}.")
         rango = modelo["duracion"]
@@ -137,18 +146,26 @@ def validar(datos) -> dict:
         calidad = ajustes_in.get("calidad") or ("medium" if "medium" in calidades else None)
         if calidades and calidad not in calidades:
             raise ErrorValidacion(f"Calidad no válida. Usa {', '.join(calidades)}.")
-        formato = ajustes_in.get("formato") or modelo["formatos"][0]
+        formato = ajustes_in.get("formato") or _por_defecto(modelo["formatos"], "1:1")
         if formato not in modelo["formatos"]:
             raise ErrorValidacion(f"Formato {formato} no disponible en {modelo['nombre']}.")
         ajustes.update(calidad=calidad if calidades else None, formato=formato)
+        resoluciones = modelo.get("resoluciones") or []
+        if resoluciones:  # modelos de Higgsfield: 1k, 2k, 4k...
+            resolucion = ajustes_in.get("resolucion") or _por_defecto(resoluciones, "2k")
+            if resolucion not in resoluciones:
+                raise ErrorValidacion(f"{modelo['nombre']} no tiene {resolucion}. Usa {', '.join(resoluciones)}.")
+            ajustes["resolucion"] = resolucion
         variantes_max = modelo.get("variantes_max", 4)
     else:
-        rango = modelo["duracion"]
-        duracion = ajustes_in.get("duracion") or rango["min"]
-        try:
-            duracion = _entero(duracion, "La duración", rango["min"], rango["max"])
-        except ErrorValidacion:
-            raise ErrorValidacion(f"La duración debe estar entre {rango['min']} y {rango['max']} segundos.")
+        rango = modelo.get("duracion")
+        duracion = None
+        if rango:
+            duracion = ajustes_in.get("duracion") or min(max(30, rango["min"]), rango["max"])
+            try:
+                duracion = _entero(duracion, "La duración", rango["min"], rango["max"])
+            except ErrorValidacion:
+                raise ErrorValidacion(f"La duración debe estar entre {rango['min']} y {rango['max']} segundos.")
         ajustes.update(duracion=duracion)
         variantes_max = 4
 

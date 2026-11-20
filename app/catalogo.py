@@ -7,6 +7,9 @@ Precios de Seedance verificados el 5 nov 2026 (ver docs/MEMORIA.md).
 from __future__ import annotations
 
 import copy
+import json
+
+from app import config
 
 FORMATOS_VIDEO = ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"]
 
@@ -67,24 +70,6 @@ VIDEO = [
         "_pixeles": PIXELES_20,
         "_ratio_adaptativo": False,
     },
-    {
-        "id": "kling-3.0", "nombre": "Kling 3.0", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "resoluciones": ["720p", "1080p"], "formatos": ["16:9", "9:16", "1:1"],
-        "duracion": {"min": 5, "max": 10}, "audio": True,
-        "entradas": ["texto", "primer_cuadro", "ultimo_cuadro"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["kling", "3"],
-    },
-    {
-        "id": "veo-3.1", "nombre": "Veo 3.1", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "resoluciones": ["720p", "1080p"], "formatos": ["16:9", "9:16"],
-        "duracion": {"min": 4, "max": 8}, "audio": True,
-        "entradas": ["texto", "primer_cuadro"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["veo", "3"],
-    },
 ]
 
 TAMANOS_IMAGEN = {"1:1": "1024x1024", "2:3": "1024x1536", "3:2": "1536x1024"}
@@ -99,43 +84,73 @@ IMAGEN = [
         "gasta_creditos_higgsfield": False,
         "nota": "Precio estimado por imagen. Sin fondo transparente: pide fondo blanco liso.",
     },
-    {
-        "id": "nano-banana-pro", "nombre": "Nano Banana Pro", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "calidades": [], "formatos": ["1:1", "2:3", "3:2", "9:16", "16:9"],
-        "variantes_max": 4, "entradas": ["texto", "referencias"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["nano", "banana", "pro"],
-    },
-    {
-        "id": "soul-2", "nombre": "Soul 2", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "calidades": [], "formatos": ["1:1", "2:3", "3:2", "9:16", "16:9"],
-        "variantes_max": 4, "entradas": ["texto", "referencias"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["soul"],
-    },
-    {
-        "id": "seedream-5-lite", "nombre": "Seedream 5 lite", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "calidades": [], "formatos": ["1:1", "2:3", "3:2", "9:16", "16:9"],
-        "variantes_max": 4, "entradas": ["texto", "referencias"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["seedream", "5"],
-    },
 ]
 
-AUDIO = [
-    {
-        "id": "higgsfield-audio", "nombre": "Higgsfield Audio", "proveedor": "higgsfield",
-        "etiqueta": "Higgsfield · créditos",
-        "duracion": {"min": 5, "max": 60}, "entradas": ["texto"],
-        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
-        "_mcp": ["audio"],
-    },
-]
+AUDIO: list[dict] = []  # por ahora solo hay audio vía Higgsfield
 
+# Modelos propios (directos). Los de Higgsfield se cargan del catálogo real.
 TIPOS = {"video": VIDEO, "imagen": IMAGEN, "audio": AUDIO}
+
+PREFIJO_HF = "hf:"
+ARCHIVO_HF = "higgsfield_catalogo.json"
+_cache_hf: dict = {"clave": None, "modelos": {"video": [], "imagen": [], "audio": []}}
+
+
+def _modelo_hf(m: dict) -> dict | None:
+    """Convierte un modelo del catálogo real de Higgsfield al formato de la app."""
+    real = m.get("id")
+    tipo = m.get("tipo")
+    if not isinstance(real, str) or not real or tipo not in TIPOS:
+        return None
+    base = {
+        "id": PREFIJO_HF + real, "nombre": m.get("nombre") or real, "proveedor": "higgsfield",
+        "etiqueta": "Higgsfield · créditos",
+        "gasta_creditos_higgsfield": True, "nota": NOTA_HIGGSFIELD,
+        "descripcion": m.get("descripcion") or "",
+        "_hf_id": real,
+    }
+    resoluciones = [str(r) for r in m.get("resoluciones") or []]
+    formatos = [str(f) for f in m.get("formatos") or []]
+    duracion = m.get("duracion") if isinstance(m.get("duracion"), dict) else None
+    if tipo == "video":
+        base.update(resoluciones=resoluciones, formatos=formatos or ["16:9"],
+                    duracion=duracion or {"min": 4, "max": 15}, audio=bool(m.get("audio")),
+                    entradas=["texto", "primer_cuadro", "ultimo_cuadro", "referencias"])
+    elif tipo == "imagen":
+        base.update(calidades=[], resoluciones=resoluciones, formatos=formatos or ["1:1"],
+                    variantes_max=4, entradas=["texto", "referencias"])
+    else:
+        base.update(duracion=duracion, entradas=["texto"])
+    return base
+
+
+def modelos_higgsfield() -> dict:
+    """Lee data/presets/higgsfield_catalogo.json (cacheado por fecha). Si falta: listas vacías."""
+    ruta = config.cfg.PRESETS / ARCHIVO_HF
+    try:
+        clave = (str(ruta), ruta.stat().st_mtime_ns)
+    except OSError:
+        return {"video": [], "imagen": [], "audio": []}
+    if _cache_hf["clave"] == clave:
+        return _cache_hf["modelos"]
+    salida = {"video": [], "imagen": [], "audio": []}
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        datos = {}
+    lista = datos.get("modelos") if isinstance(datos, dict) else datos
+    for m in lista if isinstance(lista, list) else []:
+        modelo = _modelo_hf(m) if isinstance(m, dict) else None
+        if modelo and not any(x["id"] == modelo["id"] for x in salida[m["tipo"]]):
+            salida[m["tipo"]].append(modelo)
+    _cache_hf.update(clave=clave, modelos=salida)
+    return salida
+
+
+def listas() -> dict:
+    """Todos los modelos por tipo: directos primero, luego Higgsfield."""
+    hf = modelos_higgsfield()
+    return {tipo: lista + hf.get(tipo, []) for tipo, lista in TIPOS.items()}
 
 
 def _publico(modelo: dict) -> dict:
@@ -143,12 +158,12 @@ def _publico(modelo: dict) -> dict:
 
 
 def catalogo_publico() -> dict:
-    return {tipo: [_publico(m) for m in lista] for tipo, lista in TIPOS.items()}
+    return {tipo: [_publico(m) for m in lista] for tipo, lista in listas().items()}
 
 
 def buscar(modelo_id: str, tipo: str | None = None) -> dict | None:
     """Devuelve el modelo (con llaves internas) o None."""
-    for t, lista in TIPOS.items():
+    for t, lista in listas().items():
         if tipo and t != tipo:
             continue
         for m in lista:
@@ -158,7 +173,7 @@ def buscar(modelo_id: str, tipo: str | None = None) -> dict | None:
 
 
 def tipo_de(modelo_id: str) -> str | None:
-    for t, lista in TIPOS.items():
+    for t, lista in listas().items():
         if any(m["id"] == modelo_id for m in lista):
             return t
     return None
