@@ -1,0 +1,591 @@
+{
+ "leido": "2026-11-19",
+ "cuenta": {
+  "plan": "creator",
+  "creditos": 6000
+ },
+ "nota": "Catálogo real leído con el conector Higgsfield AI (solo lectura, no gasta créditos). El historial de la cuenta no trae los prompts, solo los resultados.",
+ "uso_en_cuenta": {
+  "seedance_2_5": 9,
+  "hf_mult_replace_object_flash": 10,
+  "kling3_0": 3,
+  "hf_mult_motion_control": 1,
+  "hf_mult_replace_object": 1
+ },
+ "modelos": [
+  {
+   "id": "cinematic_studio_video_4_0",
+   "nombre": "Cinema Studio 4.0",
+   "tipo": "video",
+   "descripcion": "Cine con cámara, lente, luz, era y género",
+   "resoluciones": [
+    "480p",
+    "720p",
+    "1080p"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 4,
+    "max": 30
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "cinematic_studio_3_0",
+   "nombre": "Cinema Studio Video 3.0",
+   "tipo": "video",
+   "descripcion": "El más avanzado de cine, hasta 4K",
+   "resoluciones": [
+    "480p",
+    "720p",
+    "1080p",
+    "4k"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 4,
+    "max": 15
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "seedance_2_5",
+   "nombre": "Seedance 2.5 (Higgsfield)",
+   "tipo": "video",
+   "descripcion": "Mismo Seedance pero con 4K y borrador 480p; gasta créditos",
+   "resoluciones": [
+    "480p",
+    "720p",
+    "1080p",
+    "4k"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 4,
+    "max": 30
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "seedance_2_5_flash",
+   "nombre": "Seedance 2.5 Flash (Higgsfield)",
+   "tipo": "video",
+   "descripcion": "Rápido, 480p/720p",
+   "resoluciones": [
+    "480p",
+    "720p"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 4,
+    "max": 30
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "kling4_0",
+   "nombre": "Kling 4.0",
+   "tipo": "video",
+   "descripcion": "Texto, cuadros clave, referencias o editar video",
+   "resoluciones": [
+    "720p",
+    "1080p"
+   ],
+   "formatos": [
+    "21:9",
+    "16:9",
+    "9:16",
+    "1:1",
+    "auto"
+   ],
+   "duracion": {
+    "min": 3,
+    "max": 30
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "kling_4_0_flash",
+   "nombre": "Kling 4.0 Flash",
+   "tipo": "video",
+   "descripcion": "Kling rápido 720p",
+   "resoluciones": [
+    "720p"
+   ],
+   "formatos": [
+    "21:9",
+    "16:9",
+    "9:16",
+    "1:1",
+    "auto"
+   ],
+   "duracion": {
+    "min": 3,
+    "max": 20
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "kling3_0",
+   "nombre": "Kling 3.0",
+   "tipo": "video",
+   "descripcion": "Multi-toma, audio, transferencia de movimiento",
+   "resoluciones": [
+    "std",
+    "pro",
+    "4k"
+   ],
+   "formatos": [
+    "16:9",
+    "9:16",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 3,
+    "max": 15
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "kling_o3_image_reference",
+   "nombre": "Kling 3.0 Omni",
+   "tipo": "video",
+   "descripcion": "Hasta 7 imágenes de referencia, multi-toma",
+   "resoluciones": [
+    "std",
+    "pro",
+    "4k"
+   ],
+   "formatos": [
+    "16:9",
+    "9:16",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 3,
+    "max": 15
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "minimax_h3",
+   "nombre": "MiniMax H3",
+   "tipo": "video",
+   "descripcion": "2K con cuadros clave y referencias",
+   "resoluciones": [
+    "2K"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 4,
+    "max": 15
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "minimax_hailuo",
+   "nombre": "Minimax Hailuo 2.3",
+   "tipo": "video",
+   "descripcion": "Física natural y emoción facial",
+   "resoluciones": [
+    "768",
+    "1080"
+   ],
+   "formatos": [
+    "16:9",
+    "9:16",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 6,
+    "max": 10
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "flux_3_video",
+   "nombre": "FLUX 3 Video",
+   "tipo": "video",
+   "descripcion": "Texto a video con audio, hasta 4K",
+   "resoluciones": [
+    "720p",
+    "1080p",
+    "2k",
+    "4k"
+   ],
+   "formatos": [
+    "auto",
+    "21:9",
+    "16:9",
+    "4:3",
+    "1:1",
+    "3:4",
+    "9:16"
+   ],
+   "duracion": {
+    "min": 5,
+    "max": 20
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "grok_video_v15",
+   "nombre": "Grok Video 1.5",
+   "tipo": "video",
+   "descripcion": "Imagen y audio de referencia",
+   "resoluciones": [
+    "480p",
+    "720p",
+    "1080p"
+   ],
+   "formatos": [
+    "16:9",
+    "9:16",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 2,
+    "max": 15
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "wan2_6",
+   "nombre": "Wan 2.6",
+   "tipo": "video",
+   "descripcion": "Estilizado y experimental",
+   "resoluciones": [
+    "720p",
+    "1080p"
+   ],
+   "formatos": [
+    "16:9",
+    "9:16",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 5,
+    "max": 15
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "marketing_studio_video",
+   "nombre": "Marketing Studio",
+   "tipo": "video",
+   "descripcion": "Anuncios de producto listos para TikTok/Reels",
+   "resoluciones": [
+    "480p",
+    "720p",
+    "1080p"
+   ],
+   "formatos": [
+    "auto",
+    "9:16",
+    "16:9",
+    "1:1"
+   ],
+   "duracion": {
+    "min": 12,
+    "max": 15
+   },
+   "audio": true,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "soul_2",
+   "nombre": "Soul 2.0",
+   "tipo": "imagen",
+   "descripcion": "Realista: UGC, moda editorial, personajes",
+   "resoluciones": [
+    "1.5k",
+    "2k"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "4:3",
+    "3:4",
+    "3:2",
+    "2:3"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "soul_cinematic",
+   "nombre": "Soul Cinema",
+   "tipo": "imagen",
+   "descripcion": "Fotogramas de cine y arte conceptual",
+   "resoluciones": [
+    "1.5k",
+    "2k"
+   ],
+   "formatos": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16",
+    "3:2",
+    "2:3",
+    "21:9"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "cinematic_studio_2_5",
+   "nombre": "Cinema Studio Image 2.5",
+   "tipo": "imagen",
+   "descripcion": "Fotogramas de cine hasta 4K",
+   "resoluciones": [
+    "1k",
+    "2k",
+    "4k"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "21:9",
+    "4:5"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "nano_banana_pro",
+   "nombre": "Nano Banana Pro",
+   "tipo": "imagen",
+   "descripcion": "Máxima calidad, texto y diagramas",
+   "resoluciones": [
+    "1k",
+    "2k",
+    "4k"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "4:5",
+    "21:9"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "nano_banana_2_1",
+   "nombre": "Nano Banana 2.1",
+   "tipo": "imagen",
+   "descripcion": "Rápido, alta calidad, referencias de imagen y video",
+   "resoluciones": [
+    "1k",
+    "2k",
+    "4k"
+   ],
+   "formatos": [
+    "auto",
+    "1:1",
+    "16:9",
+    "9:16",
+    "4:5"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "gpt_image_2",
+   "nombre": "GPT Image 2 (Higgsfield)",
+   "tipo": "imagen",
+   "descripcion": "El mismo de OpenAI pero con créditos; mejor usar el directo",
+   "resoluciones": [
+    "1k",
+    "2k",
+    "4k"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "3:2",
+    "2:3"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "seedream_v4_5",
+   "nombre": "Seedream 4.5",
+   "tipo": "imagen",
+   "descripcion": "4K, control preciso y transformaciones",
+   "resoluciones": [
+    "basic",
+    "high"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "3:2",
+    "2:3"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "flux_2",
+   "nombre": "FLUX.2",
+   "tipo": "imagen",
+   "descripcion": "Sigue el prompt al pie de la letra",
+   "resoluciones": [
+    "1k",
+    "2k"
+   ],
+   "formatos": [
+    "1:1",
+    "16:9",
+    "9:16",
+    "4:3",
+    "3:4"
+   ],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "elevenlabs_music_v2_5",
+   "nombre": "ElevenLabs Music 2.5",
+   "tipo": "audio",
+   "descripcion": "Música con letra propia o instrumental",
+   "resoluciones": [],
+   "formatos": [],
+   "duracion": {
+    "min": 3,
+    "max": 600
+   },
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "elevenlabs_v4",
+   "nombre": "Eleven v4",
+   "tipo": "audio",
+   "descripcion": "Voces y diálogos, hasta 10 voces",
+   "resoluciones": [],
+   "formatos": [],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "seed_audio",
+   "nombre": "Seed Audio 1.0",
+   "tipo": "audio",
+   "descripcion": "Texto a voz con referencia de voz",
+   "resoluciones": [],
+   "formatos": [],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  },
+  {
+   "id": "text2speech_v2",
+   "nombre": "Texto a voz V2",
+   "tipo": "audio",
+   "descripcion": "Varios motores de voz",
+   "resoluciones": [],
+   "formatos": [],
+   "duracion": null,
+   "audio": false,
+   "proveedor": "higgsfield",
+   "gasta_creditos_higgsfield": true
+  }
+ ]
+}

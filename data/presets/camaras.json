@@ -1,0 +1,322 @@
+[
+  {
+    "id": "estatica",
+    "nombre": "Estática (trípode)",
+    "tipo": "camara",
+    "texto": "Static locked-off tripod shot, camera does not move, stable frame, only the subject moves.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dolly-in",
+    "nombre": "Dolly hacia adelante",
+    "tipo": "camara",
+    "texto": "Slow smooth dolly in toward the subject, steady forward push on rails, framing tightens from medium shot to close-up, no shake.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dolly-out",
+    "nombre": "Dolly hacia atrás",
+    "tipo": "camara",
+    "texto": "Slow smooth dolly out away from the subject, steady backward pull revealing more of the environment, no shake.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dolly-izquierda",
+    "nombre": "Dolly lateral izquierda",
+    "tipo": "camara",
+    "texto": "Smooth lateral dolly moving left, camera slides sideways parallel to the subject, background parallax, steady and level.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dolly-derecha",
+    "nombre": "Dolly lateral derecha",
+    "tipo": "camara",
+    "texto": "Smooth lateral dolly moving right, camera slides sideways parallel to the subject, background parallax, steady and level.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "super-dolly-in",
+    "nombre": "Super dolly adelante",
+    "tipo": "camara",
+    "texto": "Fast, long continuous dolly in from a wide shot all the way to an extreme close-up of the subject's eyes, fluid and stabilized.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "super-dolly-out",
+    "nombre": "Super dolly atrás",
+    "tipo": "camara",
+    "texto": "Fast, long continuous dolly out from a close-up of the subject to a wide establishing shot, fluid and stabilized.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dolly-zoom",
+    "nombre": "Dolly zoom (vértigo)",
+    "tipo": "camara",
+    "texto": "Dolly zoom vertigo effect: camera dollies in while the lens zooms out, subject stays the same size while the background stretches and warps.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "crash-zoom-in",
+    "nombre": "Zoom de choque adentro",
+    "tipo": "camara",
+    "texto": "Crash zoom in: sudden very fast zoom punching into the subject's face, snaps and holds, crisp, no camera shake after the stop.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "crash-zoom-out",
+    "nombre": "Zoom de choque afuera",
+    "tipo": "camara",
+    "texto": "Crash zoom out: sudden very fast zoom pulling back from close-up to wide, snaps and holds steady.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "zoom-lento",
+    "nombre": "Zoom lento",
+    "tipo": "camara",
+    "texto": "Slow gradual optical zoom in, camera position fixed, tension builds as the frame tightens on the subject.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "yoyo-zoom",
+    "nombre": "Zoom yoyo",
+    "tipo": "camara",
+    "texto": "Yo-yo zoom: quick zoom in then immediately back out on the beat, rhythmic punch, stable camera body.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "orbita-360",
+    "nombre": "Órbita 360",
+    "tipo": "camara",
+    "texto": "Smooth 360-degree orbit around the subject at eye level, constant speed, subject stays centered and in focus.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "arco-izquierda",
+    "nombre": "Arco a la izquierda",
+    "tipo": "camara",
+    "texto": "Slow arc shot curving counterclockwise around the subject, about 90 degrees, subject centered, smooth gimbal motion.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "arco-derecha",
+    "nombre": "Arco a la derecha",
+    "tipo": "camara",
+    "texto": "Slow arc shot curving clockwise around the subject, about 90 degrees, subject centered, smooth gimbal motion.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "bullet-time",
+    "nombre": "Tiempo bala",
+    "tipo": "camara",
+    "texto": "Bullet time: action frozen in extreme slow motion while the camera sweeps in a fast semicircle around the subject, particles suspended in the air.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "grua-arriba",
+    "nombre": "Grúa arriba",
+    "tipo": "camara",
+    "texto": "Crane up: camera rises vertically from ground level to a high angle, revealing the scene below, smooth and stable.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "grua-abajo",
+    "nombre": "Grúa abajo",
+    "tipo": "camara",
+    "texto": "Crane down: camera descends from a high angle down to the subject's eye level, smooth and stable.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "cenital",
+    "nombre": "Cenital",
+    "tipo": "camara",
+    "texto": "Overhead top-down bird's-eye shot, camera looking straight down at the subject, slow gentle rotation.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dron-fpv",
+    "nombre": "Dron FPV",
+    "tipo": "camara",
+    "texto": "FPV drone shot: fast agile first-person drone flight, diving and weaving through the environment, banking smoothly around obstacles, horizon stable.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "dron-aereo-alejar",
+    "nombre": "Dron aéreo alejándose",
+    "tipo": "camara",
+    "texto": "Aerial pullback: drone starts close on the subject and flies backward and upward, revealing a vast landscape or city.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "helicoptero",
+    "nombre": "Toma de helicóptero",
+    "tipo": "camara",
+    "texto": "Helicopter aerial shot: high wide view gliding slowly over the city, smooth long lateral movement, stable horizon.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "seguimiento",
+    "nombre": "Seguimiento (tracking)",
+    "tipo": "camara",
+    "texto": "Tracking shot: camera follows the subject from behind at shoulder height as they walk, smooth steadicam glide.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "seguimiento-frontal",
+    "nombre": "Seguimiento frontal",
+    "tipo": "camara",
+    "texto": "Leading tracking shot: camera moves backward in front of the subject as they walk toward it, steadicam, face stays in frame.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "camara-mano",
+    "nombre": "Cámara en mano suave",
+    "tipo": "camara",
+    "texto": "Subtle handheld camera with gentle natural breathing motion, documentary feel, no violent shake, no jitter.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "snorricam",
+    "nombre": "Snorricam (cámara al cuerpo)",
+    "tipo": "camara",
+    "texto": "Snorricam: camera rigidly mounted to the subject's body, their face stays locked in the center of frame while the world moves around them.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "paneo-izquierda",
+    "nombre": "Paneo a la izquierda",
+    "tipo": "camara",
+    "texto": "Slow smooth pan left from a fixed position, horizontal rotation revealing the scene.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "paneo-derecha",
+    "nombre": "Paneo a la derecha",
+    "tipo": "camara",
+    "texto": "Slow smooth pan right from a fixed position, horizontal rotation revealing the scene.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "paneo-latigo",
+    "nombre": "Paneo látigo",
+    "tipo": "camara",
+    "texto": "Whip pan: extremely fast horizontal pan with motion blur used as a transition to the next shot, lands clean and steady.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "tilt-arriba",
+    "nombre": "Inclinación arriba",
+    "tipo": "camara",
+    "texto": "Slow tilt up from the subject's feet to the face, camera fixed in place, reveal from bottom to top.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "tilt-abajo",
+    "nombre": "Inclinación abajo",
+    "tipo": "camara",
+    "texto": "Slow tilt down from the sky or skyline to the subject, camera fixed in place.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "angulo-holandes",
+    "nombre": "Ángulo holandés",
+    "tipo": "camara",
+    "texto": "Dutch angle: camera tilted 20 degrees off horizontal, uneasy dynamic composition, slow push in.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "ojo-de-pez",
+    "nombre": "Ojo de pez",
+    "tipo": "camara",
+    "texto": "Fisheye lens close to the subject, strong barrel distortion, low angle, skate-video energy, smooth movement.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "camara-heroe",
+    "nombre": "Cámara héroe",
+    "tipo": "camara",
+    "texto": "Hero shot: low angle looking up at the subject, slow push in and slight rise, subject looks powerful against the sky.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "brazo-robotico",
+    "nombre": "Brazo robótico",
+    "tipo": "camara",
+    "texto": "Robotic arm motion-control move: precise fast sweeping move that stops exactly on the subject, mechanical smoothness, commercial look.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "a-traves-objeto",
+    "nombre": "A través de un objeto",
+    "tipo": "camara",
+    "texto": "Camera moves forward through a gap, window or doorway, passing through the object into the next space without a cut.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "cambio-foco",
+    "nombre": "Cambio de foco",
+    "tipo": "camara",
+    "texto": "Rack focus: focus shifts from the foreground object to the subject in the background, shallow depth of field, camera static.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "hiperlapso",
+    "nombre": "Hiperlapso",
+    "tipo": "camara",
+    "texto": "Hyperlapse: camera moves forward through the city while time is sped up, people and traffic streak past, stabilized.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "obturador-lento",
+    "nombre": "Obturador lento",
+    "tipo": "camara",
+    "texto": "Low shutter speed look: subject sharp while lights and movement leave soft motion-blur trails, dreamy smear, stable camera.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "persecucion-auto",
+    "nombre": "Persecución en carro",
+    "tipo": "camara",
+    "texto": "Car chase camera: low tracking shot alongside the moving car at speed, road blur, smooth stabilized rig.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  }
+]

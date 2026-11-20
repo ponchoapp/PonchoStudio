@@ -1,0 +1,354 @@
+[
+  {
+    "id": "videoclip-vertical-barrio",
+    "nombre": "Videoclip vertical en el barrio",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 10 seconds, one continuous shot. A Colombian urban artist in an oversized black hoodie, silver chain and white sneakers raps directly to camera on a hillside barrio rooftop at night, hand gestures on the beat. Behind him the city lights of Medellín spread across the valley. Leading tracking shot moving slowly backward, medium close-up, subtle handheld breathing. Warm sodium street lamps mixed with cool moonlight, soft halo only on the lamps, deep blacks, natural brown skin tones. Audio: deep reggaeton beat with dembow rhythm, distant dogs and motorbikes. No subtitles, no extra text.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "videoclip-vertical-club",
+    "nombre": "Videoclip vertical en discoteca",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 8 seconds. The singer from @image1 (same face, hairstyle and outfit) dances in the middle of a crowded dark club, friends around him raising their arms. Camera: slow arc to the right at chest height, then a quick yo-yo zoom on the drop. Violet and cool white beams cutting through haze, deep blacks, skin lit by a soft frontal key, no oversaturation. Audio: heavy reggaeton bass drop at 0:04, crowd cheering. Keep his face and outfit identical to @image1.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "videoclip-performance-coche",
+    "nombre": "Performance junto al carro",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 10 seconds. The artist from @image1 leans on a matte black vintage car parked under a single street lamp, singing the line \"Esta noche no vuelvo temprano\" while looking into the lens. Low-angle hero shot with a slow push in. Wet asphalt reflecting the lamp, light rain, deep blacks, warm amber glow only around the lamp, realistic skin tones. Audio: his voice singing in Spanish with a Colombian accent over a slow perreo beat, rain ambience.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "videoclip-multitoma-15s",
+    "nombre": "Videoclip 15 s en tres tomas",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 15 seconds, three shots. Keep the same artist (@image1: face, braids, black leather jacket) in every shot. 0-5s: wide shot, he walks alone down an empty Bogotá street at blue hour, tracking from behind. 5-10s: match cut to a medium close-up, he turns and sings \"Yo vengo de abajo\" to camera, slow dolly in. 10-15s: whip pan to a low-angle hero shot on a rooftop, city skyline behind, crane up. Look: cool blue twilight with warm windows, deep blacks, low saturation. Audio: urban beat building up, final hit on the cut at 10s. No captions.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "escena-baile-coreografia",
+    "nombre": "Escena de baile (coreografía)",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 10 seconds. Four dancers in coordinated streetwear perform a sharp reggaeton choreography in an empty parking garage, moving in sync on every beat. Camera: static wide shot for the first 4 seconds, then a smooth 180-degree arc around the group. Overhead fluorescent tubes and one violet practical light, deep blacks, natural skin tones, light haze. Audio: dembow beat, sneakers squeaking on concrete. Full bodies always in frame, correct anatomy, no extra people.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "baile-solo-referencia-movimiento",
+    "nombre": "Baile copiando movimiento de un video",
+    "categoria": "video",
+    "prompt": "9:16, 8 seconds. The character from @image1 performs exactly the dance moves from @video1, matching its rhythm and timing. Setting: sunlit colonial street in Cartagena with colorful but natural walls. Camera: static medium-wide shot, full body visible. Bright natural daylight, balanced realistic colors. Use @video1 only for the motion, not for the face or clothes; keep identity and outfit from @image1. Audio: festive tropical urban beat.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "toma-dron-ciudad",
+    "nombre": "Toma de dron de ciudad",
+    "categoria": "video",
+    "prompt": "16:9, 8 seconds. Aerial drone shot of Medellín at dusk, the camera starts low over the rooftops of a hillside neighborhood and rises while flying forward, revealing the whole valley and the downtown towers lighting up. Smooth stabilized flight, stable horizon. Blue hour sky, warm city lights, light haze, deep shadows, restrained color. Audio: wind, distant city hum, a soft ambient pad.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "dron-fpv-persecucion",
+    "nombre": "Dron FPV entre calles",
+    "categoria": "video",
+    "prompt": "16:9, 6 seconds. FPV drone dives from above a building, races through a narrow graffiti alley, passes under hanging cables and exits over a busy avenue at night. Fast agile flight, smooth banking, horizon stable, no jitter. Wet streets, neon and sodium lights, deep blacks. Audio: drone propeller whoosh, passing motorbikes, rising synth.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "anuncio-producto-15s",
+    "nombre": "Anuncio de producto 15 s",
+    "categoria": "video",
+    "prompt": "16:9, 15 seconds. Premium commercial for the product in @image1 (keep shape, logo, colors and label exactly the same). 0-4s: macro shot, water droplets slide over the product surface, slow push in. 4-10s: smooth 180-degree orbit as studio light sweeps across it. 10-15s: locked hero pack shot centered on a dark gradient background with negative space on the right. Controlled studio lighting, glossy reflections, deep blacks. Audio: water drop, soft whoosh, subtle bass rise ending on a clean hit. No warped logo, no extra text.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "anuncio-producto-vertical-ugc",
+    "nombre": "Anuncio vertical estilo UGC",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 12 seconds. A young Colombian woman in her apartment holds the product from @image1 next to her face and says to camera \"Parce, esto me cambió la rutina\" with a natural smile, then demonstrates using it. Smartphone selfie framing, subtle handheld, bright window light, real-life setting, true colors. Ends with the product label facing the camera, steady. Audio: her voice in Colombian Spanish, room tone. Keep the label legible and unchanged, correct hands, no captions.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "anuncio-gorra-merch",
+    "nombre": "Anuncio de merch (gorra / camiseta)",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 8 seconds. Close-up product shot of the cap from @image1 rotating slowly on a black pedestal, then the camera pulls back to reveal the artist wearing it in a dark studio. Robotic arm move, precise and smooth. Single soft key and thin rim light, deep blacks, embroidered logo sharp and identical to @image1. Audio: deep bass hit, a short vocal tag.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "retrato-personaje-consistente",
+    "nombre": "Retrato de personaje consistente (video)",
+    "categoria": "video",
+    "prompt": "9:16, 6 seconds. Close-up portrait of the character from @image1: same face, skin tone, hairstyle, tattoos and earrings. He slowly turns his head from profile to face the camera and smiles slightly. Very slow dolly in, shallow depth of field. Soft key light from the left, thin rim light, dark background, deep blacks, natural skin without yellow cast. Audio: quiet room tone, a single soft piano note. Keep identity locked to @image1 throughout.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "trailer-cine",
+    "nombre": "Tráiler de cine",
+    "categoria": "video",
+    "prompt": "21:9, 15 seconds, four shots. 0-4s: aerial wide shot of a foggy mountain town in the Andes at dawn. 4-8s: cut to a medium shot, a man in a worn leather jacket stands in the rain looking at a burning car, slow push in. 8-12s: close-up of his eyes, rack focus to a photograph in his hand. 12-15s: cut to black, then the sound of a single gunshot. Anamorphic look, volumetric light, deep blacks, muted teal and warm contrast without oversaturation. Audio: low cinematic drone, rain, deep trailer braam at 8s. No titles, no text.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "trailer-accion-persecucion",
+    "nombre": "Tráiler de acción (persecución)",
+    "categoria": "video",
+    "prompt": "16:9, 10 seconds. Two motorbikes race through narrow streets of a Latin American city at night, one rider glances back while police lights flash in the distance. Low car-chase tracking shot alongside the bikes, then a whip pan to the rider's face. Wet streets, sodium and red-blue lights, deep blacks, motion blur only on the background. Audio: engines roaring, sirens, tense percussion. Bodies and bikes physically correct.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "escena-dialogo-dos-personas",
+    "nombre": "Diálogo entre dos personajes",
+    "categoria": "video",
+    "prompt": "16:9, 10 seconds. Inside a small barbershop at night, the man from @image1 sits in the chair while the barber from @image2 trims his beard. The barber says \"¿Y entonces, ya salió la canción?\" and the man answers with a grin \"Sale el viernes, hermano\". Static medium two-shot, then a slow push in on the man. Warm tungsten practical lights, mirrors, deep blacks, natural skin tones. Audio: both voices in Colombian Spanish, clippers buzzing, soft radio music in the background.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "intro-canal-youtube",
+    "nombre": "Intro de canal de YouTube",
+    "categoria": "video",
+    "prompt": "16:9, 5 seconds. A dark studio, a single spotlight turns on and reveals a glossy black microphone; the camera does a fast robotic-arm move from a wide shot to a close-up of the mic grille. Violet rim light, light haze, deep blacks. Audio: deep whoosh, a sharp bass hit at 0:03, then silence. No text in the video (titles will be added in editing).",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "visualizer-loop",
+    "nombre": "Visualizer en loop",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 8 seconds, seamless loop. A slow-motion close-up of smoke swirling around a vintage microphone under a single violet light, particles drifting. Static camera, very slow push in. Deep blacks, soft glow only on the bright light, low saturation. Audio: none, silent. The last frame matches the first frame.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "lyric-video-fondo",
+    "nombre": "Fondo para lyric video",
+    "categoria": "video",
+    "prompt": "16:9, 10 seconds. Night drive point of view through an empty city avenue, street lights passing overhead rhythmically, light rain on the windshield. Static camera mounted on the dashboard, smooth motion. Low shutter look with soft light streaks, deep blacks, muted amber and blue. Leave the center of the frame clean for text overlay. Audio: rain on glass, engine hum. No text.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "detras-camaras-bts",
+    "nombre": "Detrás de cámaras",
+    "categoria": "video",
+    "prompt": "Vertical 9:16, 8 seconds. Behind-the-scenes of a music video shoot in a warehouse: crew adjusting lights, the artist from @image1 laughing between takes, a camera operator on a gimbal. Subtle handheld documentary camera following through the set. Mixed practical lighting, real textures, natural colors. Audio: crew chatter in Spanish, a beat playing from a speaker.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "tiempo-bala-salto",
+    "nombre": "Tiempo bala (salto)",
+    "categoria": "video",
+    "prompt": "16:9, 6 seconds. A breakdancer jumps into a freeze in an empty plaza at night, time slows down to extreme slow motion at the peak, the camera sweeps in a semicircle around him while dust particles hang in the air, then real speed resumes as he lands. Deep blacks, single hard light from above, natural skin. Audio: beat drops out to silence during slow motion, a deep whoosh, beat returns on landing.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "primer-ultimo-cuadro",
+    "nombre": "Transición de primer a último cuadro",
+    "categoria": "video",
+    "prompt": "9:16, 6 seconds. Start exactly on the first frame image and end exactly on the last frame image. The camera moves smoothly forward through the scene connecting both moments in one continuous shot, natural motion, consistent lighting, no cuts. Audio: soft whoosh and ambient sound that matches the location.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "animar-foto-portada",
+    "nombre": "Animar foto de portada",
+    "categoria": "video",
+    "prompt": "9:16, 5 seconds. Animate the image @image1 subtly: hair and clothes move slightly in the wind, smoke drifts, lights flicker softly, the subject blinks once and breathes. Camera: very slow push in. Keep composition, colors and the subject's face exactly as @image1. Audio: low ambient wind and a soft beat.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "anime-escena-urbana",
+    "nombre": "Escena urbana estilo anime",
+    "categoria": "video",
+    "prompt": "16:9, 8 seconds. Anime style: a young rapper with headphones walks across a rooftop at sunset over a dense Latin American city, wind moving his jacket, birds flying past. Slow lateral dolly to the right, then a tilt up to the sky. Cel-shaded, painted background, soft cinematic light, harmonious palette. Audio: lo-fi beat, wind, distant traffic.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "hiperlapso-ciudad",
+    "nombre": "Hiperlapso de ciudad",
+    "categoria": "video",
+    "prompt": "16:9, 8 seconds. Hyperlapse moving forward along a busy downtown avenue in Bogotá from day to night, people and buses streaking past, lights turning on. Stabilized forward motion. Natural color, deep blacks at night. Audio: accelerated city ambience blending into a calm synth.",
+    "modelo_sugerido": "seedance-2.5",
+    "origen": "poncho"
+  },
+  {
+    "id": "portada-cancion",
+    "nombre": "Portada de canción",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 album cover for an urban Latin song. A young Colombian rapper sits on the hood of a black car in an empty street at night, looking down, cigarette smoke drifting, single street lamp above. Cinematic 35mm photograph, deep blacks, warm soft glow only around the lamp, natural brown skin, low saturation, fine grain. Title text \"NOCHE LARGA\" in a bold clean sans-serif at the top center, artist name \"PONCHO G\" small at the bottom. No other text, no watermark.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "portada-cancion-minimal",
+    "nombre": "Portada minimalista",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 minimalist album cover: a single gold chain lying on black velvet, hard top light creating a precise highlight, deep pure blacks, lots of negative space. Product photography, sharp detail. Small white text \"PONCHO G\" in the lower right corner. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "portada-ilustrada",
+    "nombre": "Portada ilustrada",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 illustrated album cover in a hand-drawn graphic novel style: a rapper standing on a rooftop above a Latin American city skyline at night, moon behind him, ink lines with limited palette of deep navy, black and a soft violet accent. Title \"BARRIO\" in hand-lettered style at the top. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "miniatura-youtube",
+    "nombre": "Miniatura de YouTube",
+    "categoria": "imagen",
+    "prompt": "16:9 YouTube thumbnail, 1536x1024. Close-up of the man from image 1 with a surprised expression on the left third, pointing to the right, where a glowing studio microphone sits on a dark background. High contrast, crisp detail, strong rim light, deep blacks, natural skin tones, not oversaturated. Bold white text \"ASÍ SE HIZO\" with a thin black outline on the right side, large and readable. Keep his face identical to image 1. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "miniatura-youtube-reaccion",
+    "nombre": "Miniatura de reacción",
+    "categoria": "imagen",
+    "prompt": "16:9 YouTube thumbnail. Split composition: on the left, the artist from image 1 with headphones and a big laugh; on the right, a blurred screenshot of a music video. Violet accent light, deep shadows, sharp face. Short bold text \"REACCIONO\" at the top. Keep identity from image 1. No logos, no extra text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "retrato-personaje-hoja",
+    "nombre": "Hoja de personaje consistente",
+    "categoria": "imagen",
+    "prompt": "Character reference sheet on a plain light gray background, landscape 3:2. The same young Colombian man shown four times: front view, three-quarter view, side profile, full body. Short fade haircut, thin mustache, small cross tattoo under the left eye, black oversized hoodie, baggy jeans, white sneakers. Even soft studio lighting, neutral true skin tones, photorealistic. Identical face and outfit in every view. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "retrato-editorial",
+    "nombre": "Retrato editorial",
+    "categoria": "imagen",
+    "prompt": "Portrait 2:3, high-fashion editorial photograph of the person in image 1 wearing a cream tailored suit with no shirt and a thin silver chain, seated on a vintage leather chair. Large soft key light from the left, subtle rim, seamless dark brown backdrop. Shot on 85mm, shallow depth of field, matte finish, natural skin texture, no yellow cast, deep blacks. Keep the face identical to image 1. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "foto-promo-artista",
+    "nombre": "Foto promocional de artista",
+    "categoria": "imagen",
+    "prompt": "Portrait 2:3 promotional photo: the artist from image 1 stands in a graffiti alley at night, hands in the pockets of a black puffer jacket, looking into the lens. Flash photography mixed with neon ambient light, deep blacks, controlled violet accents, natural skin tones, sharp detail, slight film grain. Keep his face, tattoos and hairstyle from image 1. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "poster-gira",
+    "nombre": "Póster de gira / concierto",
+    "categoria": "imagen",
+    "prompt": "Portrait 2:3 concert poster. The artist from image 1 on stage seen from behind, arms open toward a huge crowd, stage lights and haze. Cinematic, deep blacks, controlled violet and white light. Text at the top \"PONCHO G\" in bold condensed sans-serif, below it \"GIRA 2027\", and at the bottom \"MEDELLÍN · BOGOTÁ · CALI\" in small caps. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "flyer-lanzamiento",
+    "nombre": "Flyer de lanzamiento",
+    "categoria": "imagen",
+    "prompt": "Portrait 2:3 social media flyer for a new single release. Dark background with a large cutout photo of the artist from image 1, soft violet rim light, subtle smoke. Text: \"NUEVO SENCILLO\" small at the top, \"NOCHE LARGA\" huge in the middle, \"VIERNES 12 AM\" at the bottom. Clean modern layout, deep blacks, no other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "producto-estudio",
+    "nombre": "Foto de producto en estudio",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 premium product photograph of the item in image 1 on a glossy black surface with a soft reflection, dark gradient background. Controlled studio lighting with a large softbox from above and two thin rim lights, sharp detail, color-accurate. Preserve the product shape, logo and label exactly. No extra text, no watermark.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "producto-ambiente",
+    "nombre": "Producto en ambiente urbano",
+    "categoria": "imagen",
+    "prompt": "Landscape 3:2 lifestyle product photo: the item from image 1 placed on the hood of a black car at night on a wet street, city lights blurred in the background bokeh. Cinematic, deep blacks, soft glow only on lights, accurate product colors. Change only the setting; keep the product identical to image 1.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "fondo-blanco-recorte",
+    "nombre": "Producto con fondo blanco liso",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 e-commerce photo of the product in image 1 centered on a plain pure white background, soft even shadow under it, studio lighting, sharp, color-accurate, nothing else in the frame. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "mockup-merch",
+    "nombre": "Mockup de merch",
+    "categoria": "imagen",
+    "prompt": "Landscape 3:2 photo of a black oversized t-shirt on a hanger against a concrete wall, with the graphic from image 1 printed on the chest exactly as provided. Soft natural window light, realistic fabric folds, deep blacks. Keep the graphic undistorted. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "storyboard-videoclip",
+    "nombre": "Storyboard de videoclip",
+    "categoria": "imagen",
+    "prompt": "Landscape 3:2 storyboard sheet with 6 panels in a 3x2 grid for an urban music video: 1 wide shot of a barrio at night, 2 artist walking toward camera, 3 close-up singing, 4 dancers in a garage, 5 car under a street lamp, 6 rooftop over the city. Clean pencil and gray-marker style, panel numbers 1 to 6 small in each corner. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "primer-cuadro-videoclip",
+    "nombre": "Primer cuadro para video",
+    "categoria": "imagen",
+    "prompt": "Portrait 2:3 cinematic still to be used as the first frame of a video: the artist from image 1 standing in the middle of an empty street at night under a single street lamp, light rain, wet asphalt reflections. 35mm film look, deep blacks, warm soft glow only around the lamp, natural skin. Keep his identity from image 1. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "editar-cambiar-ropa",
+    "nombre": "Editar: cambiar ropa",
+    "categoria": "imagen",
+    "prompt": "Edit image 1: change only the outfit to a black leather jacket over a white t-shirt and a thin silver chain. Keep the face, hair, pose, background, lighting and camera angle exactly the same. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "editar-cambiar-fondo",
+    "nombre": "Editar: cambiar fondo",
+    "categoria": "imagen",
+    "prompt": "Edit image 1: replace only the background with a rooftop in Medellín at blue hour with city lights in the distance. Keep the person, pose, clothes and face identical; match the lighting direction and color to the new background so it looks natural. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "avatar-redes",
+    "nombre": "Foto de perfil para redes",
+    "categoria": "imagen",
+    "prompt": "Square 1:1 profile picture of the person in image 1, head and shoulders, centered, looking at the camera with a calm confident expression. Dark plain background, soft key light and violet rim light, sharp eyes, natural skin texture, deep blacks. Keep the face identical. No text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  },
+  {
+    "id": "banner-youtube",
+    "nombre": "Banner de canal",
+    "categoria": "imagen",
+    "prompt": "Wide 3:2 channel banner: a panoramic night view of a Latin American city skyline from a hillside, the artist from image 1 seen in silhouette on the right side, soft violet glow on the horizon. Keep the center horizontal band clean for the logo. Deep blacks, low saturation. Text \"PONCHO G\" in the center in clean bold sans-serif. No other text.",
+    "modelo_sugerido": "gpt-image-2",
+    "origen": "poncho"
+  }
+]

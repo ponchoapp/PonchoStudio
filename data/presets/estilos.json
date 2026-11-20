@@ -1,0 +1,282 @@
+[
+  {
+    "id": "cine-35mm",
+    "nombre": "Cine 35 mm",
+    "tipo": "estilo",
+    "texto": "Shot on 35mm film, fine organic grain, natural skin tones, deep rich blacks, gentle halation only around strong highlights, restrained color, cinematic contrast.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "anamorfico",
+    "nombre": "Anamórfico de cine",
+    "tipo": "estilo",
+    "texto": "Anamorphic lens look, 2.39:1 feel, oval bokeh, subtle horizontal flares only from strong light sources, deep blacks, soft natural contrast, muted color.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "neo-noir",
+    "nombre": "Neo noir",
+    "tipo": "estilo",
+    "texto": "Neo-noir: night city, hard side light, deep inky blacks, wet reflective streets, cool steel shadows with small warm practical lights, low saturation, soft glow only on bright lamps.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "noir-bn",
+    "nombre": "Noir blanco y negro",
+    "tipo": "estilo",
+    "texto": "Classic black and white noir, high contrast, deep blacks, venetian-blind shadows, film grain, single hard key light.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "videoclip-urbano-medellin",
+    "nombre": "Videoclip urbano Medellín",
+    "tipo": "estilo",
+    "texto": "Colombian urban music video look, Medellín hillside barrio at night, warm sodium street lamps mixed with cool moonlight, natural brown skin tones (not yellow), deep blacks, controlled saturation, soft halation only on street lights.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "reggaeton-noche-neon",
+    "nombre": "Reguetón noche neón",
+    "tipo": "estilo",
+    "texto": "Reggaeton music video night look, violet and magenta neon accents kept soft and controlled, deep blacks, realistic skin tones without yellow cast, light haze, gentle bloom only on neon tubes, premium polished finish.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "perreo-club",
+    "nombre": "Discoteca / club",
+    "tipo": "estilo",
+    "texto": "Inside a dark club, moving beams and strobes in violet and cool white, haze in the air, deep blacks, skin lit naturally by soft key light, no oversaturation, glow only on the brightest lights.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "calle-bogota-gris",
+    "nombre": "Calle Bogotá día gris",
+    "tipo": "estilo",
+    "texto": "Overcast Bogotá street, soft diffused daylight, muted cool palette, concrete and brick textures, natural skin, realistic documentary-music-video blend, deep shadows.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "lujo-urbano",
+    "nombre": "Lujo urbano",
+    "tipo": "estilo",
+    "texto": "Luxury urban aesthetic: black cars, gold jewelry, glossy black surfaces, low-key lighting, deep blacks, rich but restrained color, crisp highlights with soft halo only on chrome and gold reflections.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "dorado-atardecer",
+    "nombre": "Hora dorada suave",
+    "tipo": "estilo",
+    "texto": "Golden hour, low warm sun backlight, soft rim light on hair and shoulders, neutral natural skin tones (not orange or yellow), gentle flare, desaturated warm palette, deep shadows.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "hora-azul",
+    "nombre": "Hora azul",
+    "tipo": "estilo",
+    "texto": "Blue hour twilight, cool deep blue sky, warm windows and street lamps as practicals, balanced natural skin, calm moody contrast, low saturation.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "editorial-moda",
+    "nombre": "Editorial de moda",
+    "tipo": "estilo",
+    "texto": "High-fashion editorial photography, clean studio light with large soft key and subtle rim, sharp fabric detail, neutral true-to-life skin, matte finish, restrained color, magazine composition.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "estudio-negro",
+    "nombre": "Estudio fondo negro",
+    "tipo": "estilo",
+    "texto": "Seamless black studio backdrop, single soft key light and thin rim light, subject isolated, deep pure blacks, precise contrast, true skin tones.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "documental",
+    "nombre": "Documental",
+    "tipo": "estilo",
+    "texto": "Observational documentary look, natural available light, subtle handheld, true-to-life color, real textures, no stylized grading, honest skin tones.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "vhs-90s",
+    "nombre": "VHS años 90",
+    "tipo": "estilo",
+    "texto": "1990s VHS camcorder footage, soft resolution, mild chroma bleed and tracking lines, timestamp-free, muted colors, lifted but still dark shadows, nostalgic home-video feel.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "camara-dv-2000",
+    "nombre": "Cámara DV 2000s",
+    "tipo": "estilo",
+    "texto": "Early-2000s DV camcorder look, slightly sharp digital video texture, small sensor, harsh on-camera flash in night shots, natural color, candid energy.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "y2k",
+    "nombre": "Y2K",
+    "tipo": "estilo",
+    "texto": "Y2K aesthetic, glossy chrome and translucent plastics, silver and soft ice-blue tones, futuristic early-2000s styling, clean studio light, controlled saturation.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "film-8mm",
+    "nombre": "Súper 8 mm",
+    "tipo": "estilo",
+    "texto": "Super 8mm film, heavy organic grain, soft focus edges, gentle gate weave, faded warm-neutral color, vignette, nostalgic memory feel.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "bleach-bypass",
+    "nombre": "Bleach bypass",
+    "tipo": "estilo",
+    "texto": "Bleach bypass film process, low saturation, high contrast, silvery highlights, deep crushed blacks, gritty texture.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "acero-frio",
+    "nombre": "Acero frío",
+    "tipo": "estilo",
+    "texto": "Cold steel grade, cool metallic blue-gray palette, crisp contrast, deep blacks, neutral skin preserved, modern thriller feel.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "naturalista-limpio",
+    "nombre": "Naturalista limpio",
+    "tipo": "estilo",
+    "texto": "Naturalistic clean color, true-to-life tones, soft balanced contrast, neutral white balance, realistic skin, no heavy grading.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "contraluz-silueta",
+    "nombre": "Contraluz y silueta",
+    "tipo": "estilo",
+    "texto": "Contre-jour backlight, subject partially in silhouette against a bright source, soft rim glow only around the edges, deep blacks in shadow areas.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "anime",
+    "nombre": "Anime",
+    "tipo": "estilo",
+    "texto": "Japanese anime cel-shaded style, clean line art, painted backgrounds, expressive eyes, soft cinematic lighting, harmonious non-garish palette.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "animacion-3d",
+    "nombre": "Animación 3D",
+    "tipo": "estilo",
+    "texto": "Stylized 3D animated film look, soft global illumination, appealing character shapes, detailed materials, gentle colors, cinematic depth of field.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "claymation",
+    "nombre": "Plastilina",
+    "tipo": "estilo",
+    "texto": "Claymation stop-motion style, handmade clay textures with fingerprints, slightly choppy frame rate, miniature set, soft studio lighting.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "comercial-producto",
+    "nombre": "Comercial de producto",
+    "tipo": "estilo",
+    "texto": "Premium commercial product look, controlled studio lighting, glossy reflections, sharp detail, clean gradient background, deep blacks, color-accurate product.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "ugc-celular",
+    "nombre": "UGC con celular",
+    "tipo": "estilo",
+    "texto": "Authentic UGC smartphone footage, vertical, natural window light, slight handheld, real-life setting, unpolished but clean, true colors.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "trailer-epico",
+    "nombre": "Tráiler épico",
+    "tipo": "estilo",
+    "texto": "Epic blockbuster trailer look, large scale environments, dramatic volumetric light, atmospheric haze, deep blacks, restrained teal and warm contrast without oversaturation.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "terror",
+    "nombre": "Terror",
+    "tipo": "estilo",
+    "texto": "Horror film look, dim low-key lighting, deep shadows hiding detail, cold desaturated palette, slow tension, subtle grain.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "onirico",
+    "nombre": "Onírico",
+    "tipo": "estilo",
+    "texto": "Dreamy ethereal look, soft diffusion, slow motion, gentle light leaks, pastel desaturated palette, soft halo only on highlights.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "glitch",
+    "nombre": "Glitch digital",
+    "tipo": "estilo",
+    "texto": "Digital glitch aesthetic, brief datamosh and RGB split accents on beats, dark background, controlled color, clean frames between glitches.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "retro-80s",
+    "nombre": "Retro años 80",
+    "tipo": "estilo",
+    "texto": "1980s film look, soft diffusion, warm practical lights, analog grain, period wardrobe and props, muted pastel palette, deep shadows.",
+    "miniatura": null,
+    "origen": "higgsfield"
+  },
+  {
+    "id": "blanco-negro-moderno",
+    "nombre": "Blanco y negro moderno",
+    "tipo": "estilo",
+    "texto": "Modern crisp black and white, rich tonal range, deep true blacks, bright clean highlights, fine grain, editorial feel.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "caribe-tropical",
+    "nombre": "Tropical caribeño",
+    "tipo": "estilo",
+    "texto": "Colombian Caribbean coast, Cartagena colonial walls and palm trees, bright but natural daylight, sea breeze, balanced realistic colors (not oversaturated), natural skin.",
+    "miniatura": null,
+    "origen": "poncho"
+  },
+  {
+    "id": "tropical-lluvia-noche",
+    "nombre": "Lluvia tropical de noche",
+    "tipo": "estilo",
+    "texto": "Warm tropical night rain, wet asphalt reflecting street lights, droplets catching soft light, deep blacks, muted greens and warm amber, natural skin.",
+    "miniatura": null,
+    "origen": "poncho"
+  }
+]
