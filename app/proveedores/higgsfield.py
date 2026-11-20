@@ -1173,6 +1173,10 @@ def _item_preset(obj: dict, fuente: str | None) -> dict | None:
         "prompt": prompt,
         "modelo": modelo,
         "categoria": categoria,
+        # extras para recrear: formato y duración del preset si los trae
+        "formato": _primer_texto(obj, ("aspect_ratio", "ratio", "formato")),
+        "duracion": obj.get("duration") if isinstance(obj.get("duration"), (int, float))
+        and not isinstance(obj.get("duration"), bool) else None,
     }
 
 
@@ -1290,7 +1294,8 @@ def recrear(preset_id: str) -> dict | None:
         sugerido = "seedance-2.5"
         ajustes = {"resolucion": "720p",
                    "formato": _formato_de(formato_original, catalogo.FORMATOS_VIDEO, "16:9"),
-                   "duracion": 5, "audio": True, "semilla": None, "variantes": 1}
+                   "duracion": int(min(30, max(4, item.get("duracion") or 5))),
+                   "audio": True, "semilla": None, "variantes": 1}
     else:
         exclusivo = bool(modelo_hf) and "gpt_image" not in modelo_hf.lower() and info_hf is not None
         sugerido = "gpt-image-2"

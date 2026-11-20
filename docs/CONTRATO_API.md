@@ -74,7 +74,20 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 ### Prompts
 - `GET /api/presets` → `{"estilos":[Preset],"camaras":[Preset],"plantillas":[Plantilla]}`
   `Preset = {"id":"neo-noir","nombre":"Neo noir","tipo":"estilo"|"camara","texto":"fragmento que se añade al prompt","miniatura":str|null,"origen":"higgsfield"|"poncho"}`
-  `Plantilla = {"id":…,"nombre":…,"categoria":"video"|"imagen","prompt":"…","modelo_sugerido":…,"origen":…}`
+  `Plantilla = {"id":…,"nombre":…,"categoria":"video"|"imagen","prompt":"…","modelo_sugerido":…,"origen":…,"miniatura":"/presets/miniaturas/<id>.png"|null}`
+  (`miniatura` sale si existe el archivo en `data/presets/miniaturas/`, que va a git y se sirve en `/presets/miniaturas/`).
+
+### Miniaturas de plantillas (OpenAI gpt-image, gasta saldo de OpenAI)
+- `POST /api/plantillas/miniaturas/costo` body `{"ids"?:[str],"calidad"?:"low"}` → `{"total":n,"usd":n×precio}` (low ≈ 0.011 c/u).
+- `POST /api/plantillas/miniaturas` body `{"ids"?:[str],"calidad"?:"low"|"medium"|"high"}`
+  Sin `ids`: todas las plantillas sin miniatura. Con `ids`: esas (las regenera aunque ya tengan).
+  Una imagen por plantilla: 1024x1536 si el prompt dice vertical/9:16, 1536x1024 si dice 16:9/horizontal;
+  si no dice, video → horizontal, imagen → vertical. En video el prompt va como `"cinematic still frame of: …"`.
+  - Hasta 2 → `200 {"hechas":n,"fallidas":[{"id","error"}],"costo_usd":x}`.
+  - Más de 2 → `202 {"trabajo_id":"m_…"}` en segundo plano (máx 2 en paralelo). Si ya hay un lote corriendo,
+    `202 {"trabajo_id":<el actual>,"nota":…}`.
+  - Sin `OPENAI_API_KEY` → `409 {"error"}`. Calidad no válida → 400.
+- `GET /api/plantillas/miniaturas/estado` → `{"trabajo_id","hechas","total","costo_usd","fallidas":[…],"listo":bool}`
 - `POST /api/prompts/mejorar` body `{"prompt":"...","tipo":"video"|"imagen","modelo":"seedance-2.5","motor":"auto"|"ollama"|"openai","ollama_modelo":null}`
   → `{"prompt":"…mejorado…","motor":"ollama:llama3"|"openai:gpt-…"|"reglas"}` (sin IA disponible: reglas locales).
 - `GET /api/prompts/guardados` / `POST /api/prompts/guardados` `{"nombre","prompt","tipo"}` / `DELETE /api/prompts/guardados/{id}`
@@ -85,6 +98,17 @@ Puerto local: 8010. Medios descargados en `data/medios/` y servidos en `/medios/
 - `POST /api/higgsfield/desconectar` → `{"ok":true}`
 - `POST /api/higgsfield/aprender` → lee historial/modelos/presets de Higgsfield (no genera, no gasta créditos),
   guarda prompts útiles en `data/presets/aprendidos.json` → `{"nuevos":n,"total":m}`
+- `GET /api/higgsfield/galeria?tipo=video|image&cursor=` → historial de la cuenta (no gasta créditos)
+  → `{"items":[{"id","modelo","url","miniatura":str|null,"tipo":"video"|"imagen","fecha":str|null}],"siguiente":cursor|null}`
+  Cache en memoria 10 min. No conectado → `409 {"error"}`. Sin herramienta de historial → `{"items":[],"siguiente":null,"nota"}`.
+- `GET /api/higgsfield/presets?fuente=&forzar=1` → presets de Higgsfield con su preview
+  → `{"items":[{"id","nombre","tipo":"video"|"imagen","preview":url|null,"preview_tipo":"video"|"imagen","prompt":str|null,"modelo":str|null,"categoria":str|null,"formato":str|null,"duracion":number|null}],"actualizado":"ISO","nota"?:str}`
+  Recorre todas las fuentes (enum del esquema) y páginas, máx 200. Se guarda en `data/presets/higgsfield_presets.json`
+  y se sirve de ahí si tiene < 24 h (o si el MCP falla / no hay conexión). `fuente` filtra por `categoria`.
+  Sin herramienta de presets → `{"items":[],"nota"}`. No conectado y sin archivo → 409.
+- `POST /api/higgsfield/recrear` body `{"preset_id"}` → no genera nada, solo precarga el generador:
+  `{"prompt","modelo_sugerido":"seedance-2.5"|"gpt-image-2","ajustes":{…},"tipo","exclusivo":bool,"modelo_higgsfield":"hf:…"|null,"nota"?}`
+  `exclusivo` = el preset usa un modelo propio de Higgsfield (no Seedance / no GPT Image). 404 si no existe.
 - `GET /api/ollama/modelos` → `{"modelos":[{"nombre":"poncho-prompts:latest","tamano":…}]}`
 
 ## Reglas

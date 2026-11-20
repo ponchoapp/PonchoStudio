@@ -516,7 +516,7 @@ select.entrada { appearance: none; padding-right: 34px;
   position: fixed; z-index: 50; left: 8px; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom));
   background: var(--vidrio); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--linea-2); border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, .65);
-  padding: 8px; display: grid; gap: 6px; transition: border-color var(--rapido);
+  padding: 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; transition: border-color var(--rapido);
 }
 .barra-prompt:focus-within { border-color: rgba(177, 92, 255, .55); }
 @media (min-width: 1000px) {
@@ -530,7 +530,7 @@ select.entrada { appearance: none; padding-right: 34px;
 .barra-fila { display: flex; align-items: center; gap: 6px; }
 .barra-herr { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .barra-herr::-webkit-scrollbar { display: none; }
-.barra-herr .chip { flex-shrink: 0; }
+.barra-herr .chip, .barra-herr > .pop-ancla { flex-shrink: 0; }
 .barra-herr .chip .valor { color: var(--texto); }
 .motor-usado { font-size: 12px; color: var(--suave); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 0 8px; }
 .motor-usado:empty { display: none; }
