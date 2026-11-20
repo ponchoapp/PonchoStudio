@@ -168,6 +168,20 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
 - Skills: `frontend-design` = la de páginas web (disponible). Remotion en Claude Code:
   `claude plugin marketplace add remotion-dev/claude-code-plugin` y `claude plugin install remotion@remotion`.
 
+## 5c. Relevo a Claude Code en Windows (19 nov, 20:40)
+- `main` ya tiene el **rediseño estilo Higgsfield** (masonry, panel izquierdo, barra de prompt flotante), y el backend de
+  `/api/higgsfield/presets`, `/api/higgsfield/galeria`, `/api/higgsfield/recrear` y `/api/plantillas/miniaturas*`
+  (ver CONTRATO_API.md). 64 pruebas pasan. **Nada de esto se probó contra Higgsfield ni OpenAI reales**: solo con
+  servidores falsos. Primera tarea en el PC: probarlo con las conexiones reales de Poncho.
+- Poncho siente que el diseño **todavía puede mejorar**. Sigue Claude Code en Windows (Fable 5.2) con las skills
+  instaladas en `.agents/skills` (fuera de git): frontend-design, impeccable, ui-ux-pro-max (+design, ui-styling,
+  design-system), web-design-guidelines, brand-guidelines y design-taste-frontend.
+  **Ojo:** `design-taste-frontend` salió con "Critical Risk" (Gen) en el instalador: leer su SKILL.md y scripts antes
+  de usarla; no es necesaria.
+- La sesión en la nube (esta) deja de tocar el código para no pisarse. Rama `rediseno-higgsfield` ya está unida a main.
+- Ollama: el modelo del .env (Qwen 3.5 4B) "piensa" ~85 s y devuelve vacío; Claude Code lo estaba arreglando
+  (`think: false` y elegir el mejor modelo).
+
 ## 6. Ideas pedidas o propuestas (siguientes versiones)
 - Botón **"Comparar"**: un prompt a dos modelos a la vez (p. ej. Seedance 2.5 directo vs Kling por Higgsfield).
 - Seedream 5.5 como motor de imagen (más barato que OpenAI, fondo transparente).
