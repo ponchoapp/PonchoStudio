@@ -121,6 +121,10 @@ Si la conversación se compacta o se empieza una nueva sesión, leer esto primer
 - Modelos de texto baratos en la misma cuenta (GLM-5.3-Flash, DeepSeek-V4.1-Flash): idea para respaldo de "Mejorar prompt".
 - Poncho TIENE API de OpenAI (ChatGPT API): imágenes con gpt-image-2 listas en cuanto pegue la llave.
 
+- **Colombia: BytePlus NO acepta cuenta Personal, solo Business** (19 nov). Poncho va a crearla como Business con
+  nombre de su marca (p. ej. Giraldo Records). Puede pedir verificación de empresa (probar con RUT).
+  Plan B si no pasa: **OpenRouter** (tiene Seedance 2.5 y 2.5 Flash, acepta personas) → agregarlo como proveedor.
+
 ## 4f. Llaves
 - NUNCA pedir ni recibir llaves por el chat. La app tiene ventana "Pegar mis llaves" en Ajustes → `POST /api/llaves`
   escribe el `.env` del PC (conserva lo demás), recarga sin reiniciar y solo muestra los 4 últimos caracteres.
