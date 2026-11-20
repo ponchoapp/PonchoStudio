@@ -26,8 +26,8 @@ export function referenciaDe({ id, nombre, tipo, url, miniatura = null, origen =
 
 export const sinMovimiento = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Carga perezosa: el video no pide nada hasta que la tarjeta entra en pantalla;
-// ahí baja solo los metadatos para mostrar el primer cuadro.
+// Carga perezosa: un video sin poster no pide nada hasta que la tarjeta entra en pantalla
+// (margen de 400 px); ahí baja solo los metadatos para mostrar el primer cuadro.
 const observador = "IntersectionObserver" in window ? new IntersectionObserver((entradas) => {
   for (const e of entradas) {
     if (!e.isIntersecting) continue;
@@ -35,7 +35,7 @@ const observador = "IntersectionObserver" in window ? new IntersectionObserver((
     observador.unobserve(v);
     if (v.dataset.src) { v.preload = "metadata"; v.src = v.dataset.src + "#t=0.1"; }
   }
-}, { rootMargin: "300px" }) : null;
+}, { rootMargin: "400px" }) : null;
 
 export function medioVista(url, tipo, alt) {
   if (tipo === "video") {
@@ -44,39 +44,79 @@ export function medioVista(url, tipo, alt) {
     if (observador) { v.dataset.src = url; observador.observe(v); } else v.src = url;
     return v;
   }
-  return el("img", { src: url, alt: alt || "", loading: "lazy" });
+  return el("img", { src: url, alt: alt || "", loading: "lazy", decoding: "async" });
 }
 
-// Tarjeta de vista previa (preset o galería): mismo aspecto que las tarjetas de trabajo.
-export function tarjetaVista({ url, tipo, titulo, sub, semilla, onAbrir, onRecrear, etiquetaAbrir }) {
-  const tarjeta = el("div", { class: "medio" });
-  const caja = el("div", { class: "medio-caja", style: { "--ar": tipo === "video" ? "9 / 16" : "4 / 5" } });
+// Tarjeta de vista previa (preset, plantilla o generación de Higgsfield). Sin borde: el medio llena la tarjeta.
+// Con `miniatura` (poster) solo se baja esa imagen; el video se crea al pasar el mouse o al enfocar,
+// y se retira al salir, así la página nunca tiene 200 videos abiertos.
+//   formato: "16 / 9" | "9 / 16" | null (null = se ajusta a la proporción real del medio)
+//   titulo visible siempre con `tituloSiempre`; si no, aparece al pasar el mouse/enfocar (y siempre en táctil).
+export function tarjetaVista({ url, tipo, miniatura, titulo, sub, semilla, onAbrir, onRecrear, etiquetaAbrir, formato = null, tituloSiempre = false, nombreRecrear = "Recrear" }) {
+  const tarjeta = el("div", { class: "tj" + (tituloSiempre ? " tj-titulo" : "") });
+  const fijo = formato || (tipo === "video" ? "9 / 16" : "4 / 5");
+  const caja = el("div", { class: "tj-caja", style: { "--ar": fijo } });
   tarjeta.altoRel = tipo === "video" ? 1.5 : 1.25;
-  let medio = null;
-  if (url) {
-    medio = medioVista(url, tipo, titulo);
-    const ajustarProporcion = (w, h) => { if (w && h) caja.style.setProperty("--ar", `${w} / ${h}`); };
-    if (tipo === "video") medio.addEventListener("loadedmetadata", () => ajustarProporcion(medio.videoWidth, medio.videoHeight));
-    else medio.addEventListener("load", () => ajustarProporcion(medio.naturalWidth, medio.naturalHeight));
-    caja.append(medio);
+  if (formato) { const [w, h] = formato.split("/").map(Number); tarjeta.altoRel = h / w; }
+  let jugar = null, parar = null;
+  const ajustar = (w, h) => {
+    if (formato || !w || !h) return;
+    caja.style.setProperty("--ar", `${w} / ${h}`);
+    tarjeta.altoRel = h / w;
+    tarjeta.dispatchEvent(new CustomEvent("medida", { bubbles: true }));
+  };
+
+  if (tipo === "video" && url) {
+    let base = null, video = null, espera = 0;
+    if (miniatura) {
+      base = medioVista(miniatura, "imagen", "");
+      base.addEventListener("load", () => ajustar(base.naturalWidth, base.naturalHeight));
+    } else {
+      base = medioVista(url, "video");
+      base.addEventListener("loadedmetadata", () => ajustar(base.videoWidth, base.videoHeight));
+    }
+    caja.append(base);
+    jugar = () => {
+      if (sinMovimiento() || espera) return;
+      espera = setTimeout(() => {
+        if (!miniatura) { if (!base.src && base.dataset.src) base.src = base.dataset.src; base.play().catch(() => {}); return; }
+        if (!video) {
+          video = el("video", { muted: true, loop: true, playsInline: true, preload: "auto", "aria-hidden": "true", tabIndex: -1, class: "tj-video" });
+          video.muted = true;
+          video.addEventListener("playing", () => video && video.classList.add("listo"), { once: true });
+          video.src = url;
+          caja.append(video);
+        }
+        video.play().catch(() => {});
+      }, 140);
+    };
+    parar = () => {
+      clearTimeout(espera); espera = 0;
+      if (!miniatura) { base.pause(); return; }
+      if (video) { const v = video; video = null; v.pause(); v.removeAttribute("src"); v.load(); v.remove(); }
+    };
+  } else if (url || miniatura) {
+    const img = medioVista(url || miniatura, "imagen", "");
+    img.addEventListener("load", () => ajustar(img.naturalWidth, img.naturalHeight));
+    caja.append(img);
   } else {
     caja.classList.add("ruido", "sin-medio");
     caja.style.background = arte(semilla || titulo);
-    caja.append(el("div", { class: "medio-pendiente" }, el("span", {}, "Sin vista previa")));
+    caja.append(el("div", { class: "tj-pendiente" }, el("span", {}, "Sin vista previa")));
   }
-  const abrir = el("button", { class: "medio-abrir", type: "button", "aria-label": etiquetaAbrir });
+
+  const abrir = el("button", { class: "tj-abrir", type: "button", "aria-label": etiquetaAbrir || `Ver ${titulo}` });
   abrir.onclick = onAbrir;
-  if (medio && tipo === "video") {
-    const jugar = () => { if (!sinMovimiento()) { if (!medio.src && medio.dataset.src) medio.src = medio.dataset.src; medio.play().catch(() => {}); } };
-    const parar = () => medio.pause();
-    tarjeta.onmouseenter = jugar; tarjeta.onmouseleave = parar;
-    abrir.onfocus = jugar; abrir.onblur = parar;
+  if (jugar) {
+    tarjeta.addEventListener("mouseenter", jugar); tarjeta.addEventListener("mouseleave", parar);
+    abrir.addEventListener("focus", jugar); abrir.addEventListener("blur", parar);
   }
-  const recrear = onRecrear ? el("button", { class: "btn", type: "button", "aria-label": `Recrear ${titulo}` }, icono("repetir"), "Recrear") : null;
+  const recrear = onRecrear ? el("button", { class: "tj-recrear", type: "button", "aria-label": `${nombreRecrear}: ${titulo}` }, icono("repetir"), nombreRecrear) : null;
   if (recrear) recrear.onclick = (e) => { e.stopPropagation(); onRecrear(recrear); };
-  const sup = el("div", { class: "medio-sup" }, sub ? el("span", { class: "insignia insignia-demo" }, sub) : null);
-  const inf = el("div", { class: "medio-inf" }, el("p", {}, el("strong", {}, titulo)), recrear ? el("div", { class: "medio-acciones" }, recrear) : null);
-  tarjeta.append(caja, sup, abrir, inf);
+  const inf = el("div", { class: "tj-inf" },
+    el("p", { class: "tj-nombre" }, titulo),
+    sub ? el("small", {}, sub) : null);
+  tarjeta.append(caja, abrir, inf, recrear);
   return tarjeta;
 }
 

@@ -131,7 +131,14 @@ export function masonry(columnas) {
     items = lista;
     if (!n) medir(); else if (!iguales) distribuir();
   };
-  raiz.soltar = () => ro.disconnect();
+  // Las tarjetas pueden avisar ("medida") que su proporción real cambió al cargar la imagen:
+  // se reparte de nuevo (con pausa) para que las columnas queden parejas. No afecta a quien no lo use.
+  let pendiente = 0;
+  raiz.addEventListener("medida", () => {
+    clearTimeout(pendiente);
+    pendiente = setTimeout(() => { if (n && raiz.isConnected) distribuir(); }, 250);
+  });
+  raiz.soltar = () => { ro.disconnect(); clearTimeout(pendiente); };
   return raiz;
 }
 export const columnasExplorar = (w) => (w < 360 ? 1 : w < 640 ? 2 : w < 900 ? 3 : w < 1150 ? 4 : 6);
